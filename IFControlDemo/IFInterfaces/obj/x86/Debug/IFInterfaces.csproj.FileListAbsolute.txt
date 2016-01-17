@@ -1,0 +1,16 @@
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\bin\x86\Debug\IFInterfaces.dll
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\bin\x86\Debug\IFInterfaces.pdb
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\bin\x86\Debug\IFInterfaces.pri
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\IFInterfaces.dll
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\IFInterfaces.pdb
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\priconfig.xml
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\priconfig.xml.intermediate
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\layout.resfiles
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\layout.resfiles.intermediate
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\resources.resfiles
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\resources.resfiles.intermediate
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\pri.resfiles
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\pri.resfiles.intermediate
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\qualifiers.txt
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\qualifiers.txt.intermediate
+D:\source\_xaml\IFControlDemo\IFControlDemo\IFInterfaces\obj\x86\Debug\MultipleQualifiersPerDimensionFound.txt
