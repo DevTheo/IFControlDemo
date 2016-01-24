@@ -12,13 +12,13 @@ using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 
-namespace IFControls
+namespace IFCore
 {
     // For Consolas
-    internal static class CONSOLAS_FONT
+    public static class CONSOLAS_FONT
     {
-        internal static readonly string Name = "Consolas";
-        internal static readonly double WidthAt10Px = 5.496666431427;
-        internal static readonly double HeightAt10Px = 11.710000038147;
+        public static string Name { get; private set; } = "Consolas";
+        public static double WidthAt10Px { get; private set; } = 5.496666431427;
+        public static double HeightAt10Px { get; private set; } = 11.710000038147;
     }
 }

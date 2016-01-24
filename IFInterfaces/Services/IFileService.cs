@@ -9,7 +9,7 @@ using Windows.Storage.Streams;
 
 namespace IFInterfaces.Services
 {
-    public enum FSeekOrigin
+    public enum FSeekOrigin : int
     {
         Begin = 0,
         Current = 1,
@@ -47,9 +47,16 @@ namespace IFInterfaces.Services
         //_Mbstatet _wstate
     }
 
-
+    public sealed class FReadResult
+    {
+        public int Length { get; set; }
+        public object Data { get; set; }
+    }
     public interface IFileService
     {
+        String[] GetFileNames();
+
+        void ResetService();
         IAsyncAction InitFileServiceAsync([ReadOnlyArray] IStorageFile[] _files);
         IAsyncAction AddFilesAsync([ReadOnlyArray] IStorageFile[] _files);
 
@@ -90,9 +97,10 @@ namespace IFInterfaces.Services
         char[] Getc(int fileNum/*, int max = 1*/);
         char[] Getc(int fileNum, int max);
 
-        int FRead(object temp, int sizeOfValue, int len, int fileNum);
+        FReadResult FRead(object temp, int sizeOfValue, int len, int fileNum);
 
         string FGets([WriteOnlyArray] char[] str, int len, int fileNum);
+        int FGetc(int fileNum);
 
         void Seek(int fileNum, long pos, FSeekOrigin seekOrigin);
         long GetPosition(int filenum);

@@ -11,7 +11,7 @@ using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.Streams;
 
-namespace IFControls.Services
+namespace IFCore.Services
 {
     public partial class ArchiveAndLocalBasedFileService
     {

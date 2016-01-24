@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace IFControls.Internal
+namespace IFCore.Internal
 {
     internal static class NumberConversionExtensions
     {

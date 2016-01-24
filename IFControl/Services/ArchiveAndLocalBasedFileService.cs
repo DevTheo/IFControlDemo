@@ -5,14 +5,15 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
-using IFControls.Internal;
+using IFCore.Internal;
 using IFInterfaces.Services;
 using SharpCompress.Archive;
 using Windows.Foundation;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using System.Diagnostics;
 
-namespace IFControls.Services
+namespace IFCore.Services
 {
     public sealed partial class ArchiveAndLocalBasedFileService : IFileService
     {
@@ -35,12 +36,23 @@ namespace IFControls.Services
 
         public IAsyncAction InitFileServiceAsync([ReadOnlyArray] IStorageFile[] _files)
         {
-            Files.Clear();
+            ResetService();
             return AddFilesAsyncTask(_files).AsAsyncAction();
         }
         public IAsyncAction AddFilesAsync([ReadOnlyArray] IStorageFile[] _files)
         {
             return AddFilesAsyncTask(_files).AsAsyncAction();
+        }
+
+        public void ResetService()
+        {
+            foreach(var fs in OpenStreams)
+            {
+                fs.Value.Item1.Dispose();
+                OpenStreams.Remove(fs.Key);
+            }
+
+            Files.Clear();            
         }
 
         private async Task AddFilesAsyncTask(IStorageFile[] _files)
@@ -84,6 +96,10 @@ namespace IFControls.Services
                 }
             }
         }
+        public String[] GetFileNames()
+        {
+            return Files.Select(i => i.Key).ToArray();
+        }
 
         public IAsyncOperation<bool> CloseStreamAsync(int fileStream)
         {
@@ -107,6 +123,11 @@ namespace IFControls.Services
 
         private Stream getStreamFor(int fileNum)
         {
+            if(fileNum < 0)
+            {
+                return null;
+            }
+
             if (OpenStreams.Count > 0 && OpenStreams.ContainsKey(fileNum))
             {
                 return OpenStreams[fileNum].Item1;
@@ -134,7 +155,9 @@ namespace IFControls.Services
                 }
 
             }
-            else if (Files.Any(i => i.Key.Equals(fileName, StringComparison.OrdinalIgnoreCase)))
+
+            // We need to look to see if we have a file match
+            if (Files.Any(i => i.Key.Equals(fileName, StringComparison.OrdinalIgnoreCase)))
             {
                 var _file = Files.FirstOrDefault(i => i.Key.Equals(fileName, StringComparison.OrdinalIgnoreCase));
                 return new FileStreamInfo
@@ -299,6 +322,41 @@ namespace IFControls.Services
             return result;
         }
 
+        /// <summary>
+        /// Get character from stream
+        /// Returns the character currently pointed by the internal file position indicator of the specified stream.
+        /// The internal file position indicator is then advanced to the next character.
+        /// 
+        /// If the stream is at the end-of-file when called, the function returns EOF and sets the end-of-file indicator 
+        /// for the stream (feof).
+        /// 
+        /// If a read error occurs, the function returns EOF and sets the error indicator for the stream(ferror).
+        /// 
+        /// fgetc and getc are equivalent, except that getc may be implemented as a macro in some libraries.
+        /// </summary>
+        /// <param name="fileNum"></param>
+        /// <returns>
+        /// On success, the character read is returned (promoted to an int value).
+        /// The return type is int to accommodate for the special value EOF, which indicates failure:
+        /// If the position indicator was at the end-of-file, the function returns EOF and sets the eof indicator(feof) of stream.
+        /// If some other reading error happens, the function also returns EOF, but sets its error indicator (ferror) instead.
+        /// </returns>
+        public int FGetc(int fileNum)
+        {
+            var strm = getStreamFor(fileNum);
+            if (strm == null)
+                return EOF;
+
+            int ch = 0;
+            try
+            {
+                ch = (int) strm.ReadByte();
+            }
+            catch { }
+
+            return ch;
+        }
+
         public IAsyncOperation<bool> FileExistsAsync(string fileName)
         {
             return FileExistsAsyncTask(fileName).AsAsyncOperation();
@@ -323,6 +381,8 @@ namespace IFControls.Services
         public void Flush(int fileNum)
         {
             var strm = getStreamFor(fileNum);
+            if (strm == null)
+                return;
             strm.Flush();
         }
 
@@ -352,29 +412,140 @@ namespace IFControls.Services
         /// 
         /// size_t is an unsigned integral type.
         /// </returns>
-        public int FRead(object temp, int sizeOfValue, int len, int fileNum)
+        public FReadResult FRead(object temp, int sizeOfValue, int len, int fileNum)
         {
+            var result = -1;
             var strm = getStreamFor(fileNum);
             if (strm == null)
-                return -1;
+                return new FReadResult
+                {
+                    Length = -1,
+                    Data = null
+                };
+
+            var buffer = new byte[len * sizeOfValue];
+            result = strm.Read(buffer, 0, len * sizeOfValue);
+
             if (temp is byte[])
             {
-                return strm.Read((byte[]) temp, 0, len);
+                for (var i=0; i<buffer.Length; i++)
+                {
+                    ((byte[])temp)[i] = buffer[i];
+                }
+            }
+            else if (temp is char[])
+            {
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    ((char[]) temp)[i] = (char)buffer[i];
+                }
+            }
+            else if (temp is string)
+            {
+                var charArray = new char[buffer.Length];
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    charArray[i] = BitConverter.ToChar(buffer, i);
+                }
+                if (result > 0)
+                    temp = new String(charArray);
             }
             else if (temp is uint[])
             {
-                byte[] buffer = null;
-                var result = strm.Read(buffer, 0, len * sizeOfValue);
-                for (var i = 0; i < buffer.Length; i += sizeOfValue)
+                var x = 0;
+                for (int i = 0; i < buffer.Length; i= i+4)
                 {
-                    ((uint[]) temp)[i / 2] = buffer.GetUIntFromBufferLoc(i);
+                    ((uint[]) temp)[x] = BitConverter.ToUInt32(buffer, i);
+                    x++;                    
                 }
-                return result / 2;
+            }
+            else if (temp is ushort[])
+            {
+                var x = 0;
+                for (int i = 0; i < buffer.Length; i = i + 2)
+                {
+                    ((ushort[]) temp)[x] = BitConverter.ToUInt16(buffer, i);
+                    x++;
+                }
+            }
+            else if (temp is ulong[])
+            {
+                var x = 0;
+                for (int i = 0; i < buffer.Length; i = i + 8)
+                {
+                    ((ulong[]) temp)[x] = BitConverter.ToUInt64(buffer, i);
+                    x++;
+                }
+            }
+            else if (temp is int[])
+            {
+                var x = 0;
+                for (int i = 0; i < buffer.Length; i = i + 4)
+                {
+                    ((int[]) temp)[x] = BitConverter.ToInt32(buffer, i);
+                    x++;
+                }
+            }
+            else if (temp is short[])
+            {
+                var x = 0;
+                for (int i = 0; i < buffer.Length; i = i + 2)
+                {
+                    ((short[]) temp)[x] = BitConverter.ToInt16(buffer, i);
+                    x++;
+                }
+            }
+            else if (temp is long[])
+            {
+                var x = 0;
+                for (int i = 0; i < buffer.Length; i = i + 8)
+                {
+                    ((long[]) temp)[x] = BitConverter.ToInt64(buffer, i);
+                    x++;
+                }
+            }
+            else if (temp is int)
+            {
+                temp = BitConverter.ToInt32(buffer, 0);
+            }
+            else if (temp is short)
+            {
+                temp = BitConverter.ToInt16(buffer, 0);
+            }
+            else if (temp is long)
+            {
+                temp = BitConverter.ToInt64(buffer, 0);
+            }
+            else if (temp is uint)
+            {
+                temp = BitConverter.ToUInt32(buffer, 0);
+            }
+            else if (temp is ushort)
+            {
+                temp = BitConverter.ToUInt16(buffer, 0);
+            }
+            else if (temp is long)
+            {
+                temp = BitConverter.ToUInt64(buffer, 0);
+            }
+            else if (temp is byte)
+            {
+                temp = buffer[0];
+            }
+            else if (temp is char)
+            {
+                temp = (char)buffer[0];
             }
             else
             {
                 throw new NotImplementedException("Binary object serialization is not built as of yet.");
             }
+
+            return new FReadResult
+            {
+                Length = result,
+                Data = temp
+            };
         }
 
         /// <summary>
@@ -648,13 +819,12 @@ namespace IFControls.Services
         public char Putc(char chr, int fileNum)
         {
             var strm = getStreamFor(fileNum);
+            if (strm == null)
+                return (char) 0;
 
-            if (strm != null)
-            {
-                strm.WriteByte((byte) chr);
-                strm.Flush();
-                return chr;
-            }
+            strm.WriteByte((byte) chr);
+            strm.Flush();
+            return chr;
             // else Error??
             return (char) 0;
         }
@@ -728,12 +898,24 @@ namespace IFControls.Services
         ///        The file is created if it does not exist.
         /// "b"  - Open in binary mode (ignored here)
         /// </param>
-        /// <returns></returns>
+        /// <returns>
+        /// If the file is successfully opened, the function returns a pointer to a FILE object 
+        /// that can be used to identify the stream on future operations.
+        /// 
+        /// Otherwise, a null pointer is returned.
+        /// On most library implementations, the errno variable is also set to a system-specific 
+        /// error code on failure.
+        /// </returns>
         public int FOpen(string name, string mode)
         {
             var lmode = mode.ToLowerInvariant();
             if (lmode.Contains("w") || lmode.Contains("r+"))
                 return CreateLocalFileForWriteAsyncTask(name, true).Result;
+
+            // File must exist within our known files
+            if (!Files.Any(i => i.Key.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                return -1;
+
             if (lmode.Contains("a"))
                 return OpenLocalFileForWriteAsyncTask(name, true).Result;
 
@@ -752,7 +934,7 @@ namespace IFControls.Services
         public void ClearErr(int fileNum)
         {
             // Does nothing right now
-            throw new NotImplementedException("Not Implemented");
+            //throw new NotImplementedException("Not Implemented");
         }
 
         /// <summary>
@@ -771,8 +953,13 @@ namespace IFControls.Services
         /// </returns>
         public void FClose(int fileNum)
         {
-            // Does nothing right now
-            throw new NotImplementedException("Not Implemented");
+            var strm = getStreamFor(fileNum);
+            if (strm == null)
+                return;
+
+            strm.Dispose();
+
+            OpenStreams.Remove(fileNum);
         }
 
         /// <summary>
@@ -1052,8 +1239,17 @@ namespace IFControls.Services
         /// </returns>
         public int FSeek(int fileNum, long offset, FSeekOffset origin)
         {
-            // Does nothing right now
-            throw new NotImplementedException("Not Implemented");
+            try
+            {
+                Seek(fileNum, offset, (FSeekOrigin) ((int) origin));
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.Write(ex, "fileIO FSeek");
+            }
+            return -1;
+            
         }
 
         /// <summary>
