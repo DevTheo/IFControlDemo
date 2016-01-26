@@ -26,5 +26,7 @@ namespace IFInterfaces
         IAsyncOperation<ExecutionResult> Start(IIFRuntime runtime);
 
         IAsyncOperation<ExecutionResult> Start(IIFRuntime runtime, bool debugMessages);
+
+        string[] KnownExtensions { get; }
     }
 }

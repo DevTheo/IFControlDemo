@@ -17,7 +17,6 @@ namespace IFCore.Services
 {
     public sealed partial class ArchiveAndLocalBasedFileService : IFileService
     {
-        const int EOF = -1;
 
         class FileStreamInfo
         {
@@ -63,29 +62,29 @@ namespace IFCore.Services
                 {
                     var file = (IStorageFile) item;
                     Files.Add(new FileEntry(file.Name, file));
+
                     try
                     {
-                        using (var strm = (await file.OpenReadAsync()).AsStream())
+                        if (file.Name.EndsWith(".tgz", StringComparison.OrdinalIgnoreCase) ||
+                            file.Name.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
                         {
-                            var arch = ArchiveFactory.Open(strm);
-                            foreach (var entry in arch.Entries)
+                            // Extract gz file which will extract the tar
+                            using (var stream = (await file.OpenReadAsync()).AsStream())
                             {
-                                if (!entry.IsDirectory)
-                                {                                    
-                                    using (var ms = new MemoryStream())
-                                    {
-                                        try
-                                        {
-                                            entry.WriteTo(ms);
-                                        }
-                                        catch (Exception ex) { }
-                                        ms.Seek(0, SeekOrigin.Begin);
-                                        var buffer = new ArraySegment<byte>();
-                                        ms.TryGetBuffer(out buffer);
-                                        
-                                        Files.Add(new FileEntry(entry.Key, buffer.Array));
-                                    }
+                                var arch = ArchiveFactory.Open(stream);
+                                // should be only 1 file
+                                var tar = arch.Entries.First();
+                                using (var strm = tar.OpenEntryStream())
+                                {
+                                    await ExtractFilesFromArchive(strm);
                                 }
+                            }
+                        }
+                        else
+                        {
+                            using (var strm = (await file.OpenReadAsync()).AsStream())
+                            {
+                                await ExtractFilesFromArchive(strm);
                             }
                         }
                     }
@@ -96,6 +95,32 @@ namespace IFCore.Services
                 }
             }
         }
+
+        private async Task ExtractFilesFromArchive(Stream strm)
+        {
+            var arch = ArchiveFactory.Open(strm);
+            foreach (var entry in arch.Entries)
+            {
+                if (!entry.IsDirectory)
+                {
+                    using (var ms = new MemoryStream())
+                    {
+                        try
+                        {
+                            entry.WriteTo(ms);
+                        }
+                        catch (Exception ex) { }
+                        ms.Seek(0, SeekOrigin.Begin);
+                        var buffer = new ArraySegment<byte>();
+                        ms.TryGetBuffer(out buffer);
+
+                        Files.Add(new FileEntry(entry.Key, buffer.Array));
+                    }
+                }
+            }
+            
+        }
+
         public String[] GetFileNames()
         {
             return Files.Select(i => i.Key).ToArray();
@@ -345,7 +370,7 @@ namespace IFCore.Services
         {
             var strm = getStreamFor(fileNum);
             if (strm == null)
-                return EOF;
+                return FileIOConstants.EOF;
 
             int ch = 0;
             try
@@ -680,11 +705,11 @@ namespace IFCore.Services
             return GetStreamAsync(fileStream, false);
         }
 
-        public IAsyncOperation<int> OpenFileAsync([ReadOnlyArray] string[] filters, int defaultFilterIdx)
+        public IAsyncOperation<int> PickFileForReadAsync([ReadOnlyArray] string[] filters, int defaultFilterIdx)
         {
-            return OpenFileAsyncTask(filters, defaultFilterIdx).AsAsyncOperation();
+            return PickFileForReadAsyncTask(filters, defaultFilterIdx).AsAsyncOperation();
         }
-        private async Task<int> OpenFileAsyncTask(string[] filters, int defaultFilterIdx)
+        private async Task<int> PickFileForReadAsyncTask(string[] filters, int defaultFilterIdx)
         {
             var openPicker = new Windows.Storage.Pickers.FileOpenPicker();
             openPicker.ViewMode = Windows.Storage.Pickers.PickerViewMode.List;
@@ -826,14 +851,14 @@ namespace IFCore.Services
             strm.Flush();
             return chr;
             // else Error??
-            return (char) 0;
+            //return (char) 0;
         }
 
-        public IAsyncOperation<int> SaveFileAsync(string fileName, [ReadOnlyArray] string[] filters, int defaultFilterIdx)
+        public IAsyncOperation<int> PickFileForWriteAsync(string fileName, [ReadOnlyArray] string[] filters, int defaultFilterIdx)
         {
-            return SaveFileAsyncTask(fileName, filters, defaultFilterIdx).AsAsyncOperation();
+            return PickFileForWriteAsyncTask(fileName, filters, defaultFilterIdx).AsAsyncOperation();
         }
-        private async Task<int> SaveFileAsyncTask(string fileName, string[] filters, int defaultFilterIdx)
+        private async Task<int> PickFileForWriteAsyncTask(string fileName, string[] filters, int defaultFilterIdx)
         {
             var savePicker = new Windows.Storage.Pickers.FileSavePicker();
 
@@ -981,10 +1006,10 @@ namespace IFCore.Services
         /// A non-zero value is returned in the case that the end-of-file indicator associated with the stream is set.
         /// Otherwise, zero is returned.
         /// </returns>
-        public void FEof(int fileNum)
+        public bool FEof(int fileNum)
         {
             // Does nothing right now
-            throw new NotImplementedException("Not Implemented");
+            return false;
         }
 
         /// <summary>
@@ -1035,7 +1060,7 @@ namespace IFCore.Services
             } catch (Exception ex)
             {
             }
-            return EOF;
+            return FileIOConstants.EOF;
         }
 
         /// <summary>

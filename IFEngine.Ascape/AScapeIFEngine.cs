@@ -101,6 +101,8 @@ namespace IFEngine.Ascape
         #region IIFGameEngine
         public string Identifier { get { return "ASCAPE";  } }
 
+        public string[] KnownExtensions { get { return null; } }
+
         public CanRunResult CanRun(IFileService fileIO)
         {
             var filesNames = fileIO.GetFileNames();

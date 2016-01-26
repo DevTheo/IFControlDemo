@@ -9,6 +9,11 @@ using Windows.Storage.Streams;
 
 namespace IFInterfaces.Services
 {
+    public static class FileIOConstants
+    {
+        public const int EOF = -1;
+    }
+
     public enum FSeekOrigin : int
     {
         Begin = 0,
@@ -60,9 +65,8 @@ namespace IFInterfaces.Services
         IAsyncAction InitFileServiceAsync([ReadOnlyArray] IStorageFile[] _files);
         IAsyncAction AddFilesAsync([ReadOnlyArray] IStorageFile[] _files);
 
-        IAsyncOperation<int> OpenFileAsync([ReadOnlyArray] string[] filters, int defaultFilterIdx);
-
-        IAsyncOperation<int> SaveFileAsync(string fileName, [ReadOnlyArray] string[] filters, int defaultFilterIdx);
+        IAsyncOperation<int> PickFileForReadAsync(string fileName, [ReadOnlyArray] string[] filters, int defaultFilterIdx);
+        IAsyncOperation<int> PickFileForWriteAsync(string fileName, [ReadOnlyArray] string[] filters, int defaultFilterIdx);
 
         IAsyncOperation<IRandomAccessStream> GetStreamAsync(int fileStream, bool readOnly);
 
@@ -112,7 +116,7 @@ namespace IFInterfaces.Services
         int FOpen(string name, string mode);
         void ClearErr(int fileNum);
         void FClose(int fileNum);
-        void FEof(int fileNum);
+        bool FEof(int fileNum);
         void FError(int fileNum);
         int FFlush(int fileNum);
         int FGetPos(int fileNum, FPos_T pos);
