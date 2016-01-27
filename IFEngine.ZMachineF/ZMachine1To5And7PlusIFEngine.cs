@@ -92,14 +92,24 @@ namespace IFEngine.ZMachineF
                 return runtime.FileIO;
             }
         }
+        ExecutionResult execresult = ExecutionResult.ERR_NO_ERRORS;
         const string VERSION = "0.8.4";
 
-        //internal readonly char[] zscii_conv_1 = new [] {
-        //    [155 - 128] = 'a','o','u','A','O','U','s','>','<','e','i','y','E','I','a','e','i','o','u','y','A','E','I','O','U','Y', 'a','e','i','o','u','A','E','I','O','U','a','e','i','o','u','A','E','I','O','U','a','A','o','O','a','n', 'o','A','N','O','a','A','c','C','t','t','T','T','L','o','O','!','?'};
+        //internal readonly char[] zscii_conv_1 = new [] {[155 - 128] = 'a','o','u','A','O','U','s','>','<','e','i','y','E','I','a','e','i','o','u','y','A','E','I','O','U','Y', 'a','e','i','o','u','A','E','I','O','U','a','e','i','o','u','A','E','I','O','U','a','A','o','O','a','n', 'o','A','N','O','a','A','c','C','t','t','T','T','L','o','O','!','?'};
 
         //internal readonly string zscii_conv_2 = {[155 - 128] = 'e','e','e', [161 - 128] = 's','>','<', [211 - 128] = 'e','E', [215 - 128] = 'h','h','h','h', [220 - 128] = 'e','E'};
+//        const char zscii_conv_1[128] ={
+//  [155-128]=
+//  'a','o','u','A','O','U','s','>','<','e','i','y','E','I','a','e','i','o','u','y','A','E','I','O','U','Y',
+//  'a','e','i','o','u','A','E','I','O','U','a','e','i','o','u','A','E','I','O','U','a','A','o','O','a','n',
+//  'o','A','N','O','a','A','c','C','t','t','T','T','L','o','O','!','?'
+//};
 
-        internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789.,!?_#'\"/\\<-:()";
+//    const char zscii_conv_2[128] ={
+//  [155-128]='e','e','e', [161-128]='s','>','<', [211-128]='e','E', [215-128]='h','h','h','h', [220-128]='e','E'
+//};
+
+internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789.,!?_#'\"/\\<-:()";
         internal string v2alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ^0123456789.,!?_#'\"/\\-:()";
 
         //internal const string optarg = {['a'] = 1,['e'] = 1,['g'] = 1,['i'] = 1,['o'] = 1,['r'] = 1,['s'] = 1};
@@ -190,7 +200,7 @@ namespace IFEngine.ZMachineF
         internal string instruction_bkpt = new string(new char[256]);
         internal uint[] address_bkpt = new uint[16];
         internal uint continuing;
-        internal sbyte lastdebug;
+        internal bool lastdebug = false;
         internal ushort oldscore = 0;
         #endregion
 
@@ -284,6 +294,7 @@ namespace IFEngine.ZMachineF
                 }
             }
         }
+
         void randomize(ushort seed)
         {
             int i;
@@ -318,6 +329,7 @@ namespace IFEngine.ZMachineF
             get_random(4);
             get_random(4);
         }
+
         ushort read16(int address)
         {
             return (ushort) ((memory[address] << 8) | memory[address + 1]);
@@ -396,6 +408,7 @@ namespace IFEngine.ZMachineF
         {
             store(memory[program_counter++], value);
         }
+
         ushort aux_restore()
         {
             /*
@@ -431,6 +444,7 @@ namespace IFEngine.ZMachineF
             }*/
             return 0;
         }
+
         ushort aux_save()
         {
             /*
@@ -782,6 +796,11 @@ namespace IFEngine.ZMachineF
             return 0;
         }
 
+        void char_print(char zscii)
+        {
+            char_print((byte)zscii);
+        }
+
         void char_print(byte zscii)
         {
             if (zscii == 0)
@@ -944,11 +963,342 @@ namespace IFEngine.ZMachineF
                 }
             }
         }
+
+        void insert_object(ushort obj, ushort dest)
+        {
+            ushort p = parent(obj); 
+            ushort s = sibling(obj);
+            ushort x;
+            if (p != 0)
+            {
+                //if (opts['d'] != 0)
+                //{
+                //    Console.Error.Write("\n** Detaching {0:D} from {1:D}.\n", obj, p);
+                //}
+                // Detach object from parent
+                x = child(p);
+                if (x == obj)
+                {
+                    set_child(p, sibling(x));
+                }
+                else
+                {
+                    while (sibling(x) != 0)
+                    {
+                        if (sibling(x) == obj)
+                        {
+                            set_sibling(x, sibling(sibling(x)));
+                            break;
+                        }
+                        x = sibling(x);
+                    }
+                }
+            }
+            if (dest != 0)
+            {
+                //if (opts['d'] != 0)
+                //{
+                //    Console.Error.Write("\n** Attaching {0:D} to {1:D}.\n", obj, dest);
+                //}
+                // Attach object to new parent
+                set_sibling(obj, child(dest));
+                set_child(dest, obj);
+            }
+            else
+            {
+                set_sibling(obj, 0);
+            }
+            set_parent(obj, dest);
+        }
+
+        bool verify_checksum()
+        {
+            return true;
+            //uint size = read16(0x1A);
+            //ushort sum = 0;
+            //if (verified != 0)
+            //{
+            //    return 1;
+            //}
+            //if (zmachineVersion < 4)
+            //{
+            //    size <<= 1;
+            //}
+            //else if (zmachineVersion < 6)
+            //{
+            //    size <<= 2;
+            //}
+            //else if (zmachineVersion < 10)
+            //{
+            //    size <<= 3;
+            //}
+            //else
+            //{
+            //    size <<= 4;
+            //}
+            //fileIO.ClearErr(story);
+            //if (size != 0)
+            //{
+            //    size -= 0x40;
+            //}
+            //fileIO.FSeek(story, 0x40, FSeekOffset.SEEK_SET);
+            //while (size-- != 0)
+            //{
+            //    sum += (ushort)fileIO.FGetc(story);
+            //}
+            //return (sum == read16(0x1C));
+        }
+
+        byte system_input(string[] @out)
+        {
+            string p;
+            uint i;
+            input_again:
+            GlobalMembersFweep.text_flush();
+            cur_row = 2;
+            cur_column = 0;
+            if (!fgets(text_buffer, 1023, stdin))
+            {
+                Console.Error.Write("*** Unable to continue.\n");
+                Environment.Exit(1);
+            }
+            p = text_buffer.Substring(text_buffer.Length);
+            while (p != text_buffer && p[-1] < 32)
+            {
+                *--p = 0; // Let's removing "CRLF", etc
+            }
+            if (escape_code != 0 && *text_buffer == escape_code)
+            {
+                @out = text_buffer.Substring(2);
+                switch (text_buffer[1])
+                {
+                    case '"':
+                        text_buffer[1] = escape_code;
+                        @out = text_buffer.Substring(1);
+                        break;
+                    case '1'... '9':
+			return text_buffer[1] + 133 - '1';
+                    case ';':
+                        if (transcript)
+                        {
+                            fputc(0, transcript);
+                            fputs(text_buffer.Substring(2), transcript);
+                            fputc(13, transcript);
+                        }
+                        goto input_again;
+                    case '<':
+                        return 131;
+                    case '>':
+                        return 132;
+                    case '?':
+                        fputs("Arrow keys: ^v<>    Function keys: 123456789\n" + "Other keys: x (delete) s (space) e (escape) \" (escape_code)\n" + " B0 = breakpoints off   B1 = breakpoints on\n" + " F0 = read keyboard   F1 = read logged input\n" + " L0 = disable input logging   L1 = enable input logging\n" + " S0 = transcript off   S1 = transcript on\n" + " U = instruction usage   U* = save instruction usage to file\n" + " Y = clear instruction usage\n" + " ;* = send comment to transcript\n" + " b = break into debugger\n" + " q = quit\n" + " r* = initialize random number generator\n" + " y = show status line (version 1, 2, 3 only)\n", stderr);
+                        goto input_again;
+                    case 'B':
+                        break_on = text_buffer[2] & 1;
+                        goto input_again;
+                    case 'F':
+                        from_log = text_buffer[2] & 1;
+                        goto input_again;
+                    case 'L':
+                        logging = text_buffer[2] & 1;
+                        goto input_again;
+                    case 'S':
+                        memory[0x11] &= 0xFE;
+                        memory[0x11] |= text_buffer[2] & 1;
+                        goto input_again;
+                    case 'U':
+                        if (text_buffer[2])
+                        {
+                            FILE fp = fopen(text_buffer.Substring(2), "wb");
+                            if (fp == null)
+                            {
+                                goto input_again;
+                            }
+                            fwrite(instruction_use, 1, 256, fp);
+                            fclose(fp);
+                        }
+                        else
+                        {
+                            for (i = 0; i < 256; i++)
+                            {
+                                if ((instruction_use[i] & 0x06) != 0)
+                                {
+                                    Console.Write(".{0:X2}.\n", i);
+                                }
+                            }
+                        }
+                        goto input_again;
+                    case 'Y':
+                        //C++ TO C# CONVERTER TODO TASK: The memory management function 'memset' has no equivalent in C#:
+                        memset(instruction_use, 0, 256);
+                        goto input_again;
+                    case '^':
+                        return 129;
+                    case 'b':
+                        GlobalMembersFweep.debugger();
+                        if (lastdebug != 0)
+                        {
+                            return 0;
+                        }
+                        goto input_again;
+                    case 'e':
+                        return 27;
+                    case 'q':
+                        Environment.Exit(0);
+                        break;
+                    case 'r':
+                        GlobalMembersFweep.randomize(strtol(text_buffer.Substring(2), 0, 0));
+                        goto input_again;
+                    case 's':
+                        text_buffer[1] = ' ';
+                        @out = text_buffer.Substring(1);
+                        break;
+                    case 'v':
+                        return 130;
+                    case 'x':
+                        return 8;
+                    case 'y':
+                        if (memory > 3)
+                        {
+                            Console.Error.Write("*** Status line not available in this Z-machine version.\n");
+                        }
+                        else
+                        {
+                            GlobalMembersFweep.text_print((GlobalMembersFweep.read16(memory > 3 ? (object_table + 124 + (GlobalMembersFweep.fetch(16)) * 14) : (object_table + 60 + (GlobalMembersFweep.fetch(16)) * 9)) << address_shift) + 1);
+                            GlobalMembersFweep.char_print(13);
+                            printf(memory == 3 && ((memory[0x01] & 2) != 0) ? "Time: %02u:%02u\n" : "Score: %d\nTurns: %d\n", (short)GlobalMembersFweep.fetch(17), GlobalMembersFweep.fetch(18));
+                        }
+                        goto input_again;
+                }
+            }
+            else
+            {
+                @out = text_buffer;
+            }
+            return 13;
+        }
+
+        async Task<byte> line_input()
+        {
+            string ptr;
+            //C++ TO C# CONVERTER TODO TASK: Pointer arithmetic is detected on this variable, so pointers on this variable are left unchanged:
+            StringBuilder p;
+            int c;
+            int cmax;
+            byte res;
+            //if (from_log != 0 && inlog != null && feof(inlog))
+            //{
+            //    from_log = 0;
+            //}
+            //if (from_log != 0)
+            //{
+            //    p = text_buffer;
+            //    for (;;)
+            //    {
+            //        c = fgetc(inlog);
+            //        if (c == 8)
+            //        {
+            //            if (p > text_buffer)
+            //            {
+            //                p--;
+            //            }
+            //        }
+            //        else if (c == 0 || c == 13 || c == 27 || (c > 128 && c < 145) || c > 251 || c == EOF)
+            //        {
+            //            res = c;
+            //            if (c == EOF)
+            //            {
+            //                from_log = 0;
+            //            }
+            //            break;
+            //        }
+            //        else if ((c > 31 && c < 127) || (c > 154 && c < 252))
+            //        {
+            //            *p++ = c;
+            //        }
+            //    }
+            //    *p = 0;
+            //}
+            //else
+            //{
+                //if (opts['n'] != 0 && memory < 4 && ((short)GlobalMembersFweep.fetch(17)) != oldscore)
+                //{
+                //    c = ((short)GlobalMembersFweep.fetch(17)) - oldscore;
+                //    Console.Write("\n[The score has been {0}creased by {1:D}.]\n", c >= 0 ? "in" : "de", c >= 0 ? c : -c);
+                //    oldscore = (short)GlobalMembersFweep.fetch(17);
+                //}
+                res = await system_input(ptr);
+                if (lastdebug)
+                    return await Task.FromResult((byte) 0);
+            //}
+            if (logging && outlog > 0)
+            {
+                fileIO.FPrintf(outlog, "{0}", ptr);
+                fileIO.FPutc(res, outlog);
+            }
+            if ((memory[0x11] & 1) != 0)
+            {
+                if (transcript != 0)
+                {
+                    fileIO.FPuts(ptr, transcript);
+                    fileIO.FPutc(13, transcript);
+                }
+                else
+                {
+                    memory[0x10] |= 4;
+                }
+            }
+            var loc = 0;
+            if (zmachineVersion < 9)
+            {
+                p = new StringBuilder(ptr);
+                while (p[loc] != (char)0)
+                {
+                    if (p[loc] >= 'A' && p[loc] <= 'Z')
+                    {
+                        p[loc] |= (char)0x20;
+                    }
+                    loc++;
+                }
+                ptr = p.ToString();
+            }
+
+            loc = 0;
+            p = new StringBuilder(ptr);
+            c = 0;
+            cmax = memory[inst_args[0]];
+            if (zmachineVersion > 4)
+            {
+                // "Left over" characters are not implemented.
+                while (p[loc] != (char)0 && c < cmax)
+                {
+                    memory[inst_args[0] + c + 2] = (byte)p[loc++];
+                    ++c;
+                }
+
+                memory[inst_args[0] + 1] = (byte)c;
+                if (inst_args[1] != 0)
+                {
+                    tokenise(inst_args[0] + 2, 0, inst_args[1], c, 0);
+                }
+            }
+            else
+            {
+                while (p[loc] != (char)0 && c < cmax)
+                {
+                    memory[inst_args[0] + c + 1] = (byte)p[loc++];
+                    ++c;
+                }
+                memory[c + 1] = 0;
+                tokenise(inst_args[0] + 1, 0, inst_args[1], c, 0);
+            }
+            return res;
+        }
         #endregion
 
         async Task<ExecutionResult> StartAsyncTask(bool debugMessages)
         {
-            var result = ExecutionResult.ERR_NO_ERRORS;
+            execresult = ExecutionResult.ERR_NO_ERRORS;
 
             var fileExt = fileIO.GetFileNames().Where(i => i.Contains(".")).Select(i => i.Substring(i.LastIndexOf(".")))
                 .First(i => KnownExtensions.Contains(i.ToLower()));
@@ -960,13 +1310,13 @@ namespace IFEngine.ZMachineF
                 help();
                 return await Task.FromResult(ExecutionResult.ERR_BADFILE);
             }
-            result = await game_begin();
-            if (result != ExecutionResult.ERR_NO_ERRORS)
-                return result;
+            execresult = await game_begin();
+            if (execresult != ExecutionResult.ERR_NO_ERRORS)
+                return execresult;
 
-            result = await game_restart();
-            if (result != ExecutionResult.ERR_NO_ERRORS)
-                return result;
+            execresult = await game_restart();
+            if (execresult != ExecutionResult.ERR_NO_ERRORS)
+                return execresult;
 
             if (debugMessages)
             {
@@ -974,12 +1324,12 @@ namespace IFEngine.ZMachineF
             }
             for (;;)
             {
-                result = await execute_instruction();
-                if (result != ExecutionResult.ERR_NO_ERRORS)
+                execresult = await execute_instruction();
+                if (execresult != ExecutionResult.ERR_NO_ERRORS)
                     break;
             }
 
-            return await Task.FromResult(result);
+            return await Task.FromResult(execresult);
         }
 
         void help()
@@ -1006,7 +1356,6 @@ namespace IFEngine.ZMachineF
 
         async Task<ExecutionResult> game_begin()
         {
-            var result = ExecutionResult.ERR_NO_ERRORS;
             var done = false;
             await Task.Run(() =>
             {
@@ -1018,7 +1367,7 @@ namespace IFEngine.ZMachineF
                 if (story == 0 || story < 1)
                 {
                     runtime.WriteLine("\n*** Unable to load story file: {0}", story_name);
-                    result = ExecutionResult.ERR_BADFILE;
+                    execresult = ExecutionResult.ERR_BADFILE;
                     done = true;
                 }
                 if(!done)
@@ -1190,12 +1539,12 @@ namespace IFEngine.ZMachineF
                 }
             });
 
-            return result;
+            return execresult;
         }
 
         async Task<ExecutionResult> game_restart()
         {
-            var result = ExecutionResult.ERR_NO_ERRORS;
+            execresult = ExecutionResult.ERR_NO_ERRORS;
             await Task.Run(() =>
             {
                 int addr = 64;
@@ -1213,12 +1562,12 @@ namespace IFEngine.ZMachineF
                     addr += 1024;
                 }
             });
-            return result;
+            return execresult;
         }
         ulong y;
         async Task<ExecutionResult> execute_instruction()
         {
-            var result = ExecutionResult.ERR_NO_ERRORS;
+            execresult = ExecutionResult.ERR_NO_ERRORS;
 
             byte currentInstruction = memory[program_counter++];
             ushort at;
@@ -1323,7 +1672,7 @@ namespace IFEngine.ZMachineF
                     {
                         program_counter = u;
                         await debugger();
-                        return result;
+                        return execresult;
                     }
                     for (n = 0; n < 16; n++)
                     {
@@ -1331,7 +1680,7 @@ namespace IFEngine.ZMachineF
                         {
                             program_counter = u;
                             await debugger();
-                            return result;
+                            return execresult;
                         }
                     }
                 }
@@ -1500,7 +1849,7 @@ namespace IFEngine.ZMachineF
                         break;
 		            case 0x1D: // Read word from long property
 		                u = property_address(inst_args[0], (byte) inst_args[1]);
-                        storei(read16(u));
+                        storei(read16((int)u));
                         break;
 		            case 0x80: // Jump if zero
 		                branch(inst_args[inst_args_index] == 0 );
@@ -1552,7 +1901,7 @@ namespace IFEngine.ZMachineF
 		                insert_object(inst_args[inst_args_index], 0);
                         break;
 		            case 0x8A: // Print short name of object
-		                text_print(obj_prop_addr(inst_args[inst_args_index]) + 1);
+		                text_print((uint)obj_prop_addr((uint)(inst_args[inst_args_index] + 1)));
                         break;
 		            case 0x8B: // Return
 		                exit_routine(inst_args[inst_args_index]);
@@ -1561,7 +1910,7 @@ namespace IFEngine.ZMachineF
 		                program_counter += (uint)((short) inst_args[inst_args_index] - 2);
                         break;
 		            case 0x8D: // Print by packed address
-		                text_print((inst_args[inst_args_index] << packed_shift) + text_start);
+		                text_print((uint)((inst_args[inst_args_index] << packed_shift) + text_start));
                         break;
 		            case 0x8E: // Load variable
 		                at = fetch((byte) inst_args[inst_args_index]);
@@ -1802,7 +2151,7 @@ namespace IFEngine.ZMachineF
 		            if (zmachineVersion > 8)
                     {
                         u = (uint)((inst_args[0] << address_shift) + (inst_args[1] << 1) + inst_args[2)];
-                        storei(read16(u));
+                        storei(read16((int)u));
                     }
                     else if (inst_args[inst_args_index] != 0)
                     {
@@ -1828,7 +2177,7 @@ namespace IFEngine.ZMachineF
                     }
                     else
                     {
-                        write16(u, inst_args[2]);
+                        write16((int)u, inst_args[2]);
                     }
                     break;
 		        case 0xE4: // Read line of input
@@ -1839,7 +2188,7 @@ namespace IFEngine.ZMachineF
                     }
                     break;
 		        case 0xE5: // Print character
-		            char_print(inst_args[inst_args_index]);
+		            char_print((byte)inst_args[inst_args_index]);
                     break;
 		        case 0xE6: // Print number
 		            n = (short) inst_args[inst_args_index];
