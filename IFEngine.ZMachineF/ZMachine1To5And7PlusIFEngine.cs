@@ -8,13 +8,15 @@ using IFInterfaces.Services;
 using IFInterfaces.Support;
 using Windows.Foundation;
 using System.IO;
+using IFInterfaces.Helpers;
 
 namespace IFEngine.ZMachineF
 {
     public sealed class ZMachine1To5And7PlusIFEngine : IIFGameEngine
     {
-        #region IIFGameEngine
-        public string Identifier
+
+    #region IIFGameEngine
+    public string Identifier
         {
             get
             {
@@ -55,7 +57,7 @@ namespace IFEngine.ZMachineF
         public IAsyncOperation<ExecutionResult> Start(IIFRuntime runtime, bool debugMessages)
         {
             this.runtime = runtime;
-            return StartAsyncTask(bool debugMessages);
+            return StartAsyncTask(debugMessages).AsAsyncOperation();
         }
         #endregion
 
@@ -94,23 +96,45 @@ namespace IFEngine.ZMachineF
         }
         ExecutionResult execresult = ExecutionResult.ERR_NO_ERRORS;
         const string VERSION = "0.8.4";
+        const char NULC = '\0';
+        
+        internal readonly StringBuilder zscii_conv_1 = new StringBuilder(new String(new char[] {
+            NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //20
+            NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //40
+            NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //60
+            NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //80
+            NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //100
+            NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //120
+            NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //140
+            NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, // 154
+            'ä','ö','ü','Ä','Ö','Ü','ß','»','«','ë','ï','ÿ','Ë','Ï','á','é', // 155-170
+            'í','ó','ú','ý','Á','É','Í','Ó','Ú','Ý','à','è','ì','ò','ù','À', // 171-186
+            'È','Ì','Ò','Ù','â','ê','î','ô','û','Â','Ê','Î','Ô','Û','å','Å', // 187-202
+            'ø','Ø','ã','ñ', 'õ','Ã','Ñ','Õ','æ','Æ','ç','Ç','þ','ð','Þ','Ð', // 203-218
+            '£','œ','Œ','¡','¿' //219 -223
+        }));
 
-        //internal readonly char[] zscii_conv_1 = new [] {[155 - 128] = 'a','o','u','A','O','U','s','>','<','e','i','y','E','I','a','e','i','o','u','y','A','E','I','O','U','Y', 'a','e','i','o','u','A','E','I','O','U','a','e','i','o','u','A','E','I','O','U','a','A','o','O','a','n', 'o','A','N','O','a','A','c','C','t','t','T','T','L','o','O','!','?'};
+        //internal readonly StringBuilder zscii_conv_2 = new StringBuilder(new String(new char[] {
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //20
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //40
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //60
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //80
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //100
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //120
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //140
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, // 154
+        //    'e','e','e', NULC, NULC, NULC, // 155-160
+        //    's','>','<',NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,NULC,// 161-180
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, //200
+        //    NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, NULC, // 210
+        //    'e','E', NULC,NULC, // 211- 214
+        //    'h','h','h','h', NULC, // 215-219
+        //    'e','E', NULC,NULC
+        //}));
 
-        //internal readonly string zscii_conv_2 = {[155 - 128] = 'e','e','e', [161 - 128] = 's','>','<', [211 - 128] = 'e','E', [215 - 128] = 'h','h','h','h', [220 - 128] = 'e','E'};
-//        const char zscii_conv_1[128] ={
-//  [155-128]=
-//  'a','o','u','A','O','U','s','>','<','e','i','y','E','I','a','e','i','o','u','y','A','E','I','O','U','Y',
-//  'a','e','i','o','u','A','E','I','O','U','a','e','i','o','u','A','E','I','O','U','a','A','o','O','a','n',
-//  'o','A','N','O','a','A','c','C','t','t','T','T','L','o','O','!','?'
-//};
+        internal char[] v1alphaChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789.,!?_#'\"/\\<-:()".ToCharArray();
+        internal char[] v2alphaChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ^0123456789.,!?_#'\"/\\-:()".ToCharArray();
 
-//    const char zscii_conv_2[128] ={
-//  [155-128]='e','e','e', [161-128]='s','>','<', [211-128]='e','E', [215-128]='h','h','h','h', [220-128]='e','E'
-//};
-
-internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789.,!?_#'\"/\\<-:()";
-        internal string v2alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ^0123456789.,!?_#'\"/\\-:()";
 
         //internal const string optarg = {['a'] = 1,['e'] = 1,['g'] = 1,['i'] = 1,['o'] = 1,['r'] = 1,['s'] = 1};
         internal string[] opts = new string[128];
@@ -123,9 +147,9 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
         internal int auxfile = 0;
         internal byte[] auxname = new byte[11];
         internal bool original = true;
-        internal sbyte verified = 0;
-        internal sbyte allow_undo = 1;
-        internal sbyte escape_code = 0;
+        internal bool verified = false;
+        internal bool allow_undo = true;
+        internal char escape_code = (char)0;
         internal int sc_rows = 25;
         internal int sc_columns = 80;
 
@@ -150,11 +174,11 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
         //#define version
         internal byte[] undomem = new byte[0x40000];
         internal uint program_counter;
-        internal StackFrame[] frames = new StackFrame[256];
+        internal StackFrame[] frames = Arrays.InitializeWithDefaultInstances<StackFrame>(256);
         internal int[] stack = new int[1024];
         internal int frameptr;
         internal int stackptr;
-        internal StackFrame[] u_frames = new StackFrame[256];
+        internal StackFrame[] u_frames = Arrays.InitializeWithDefaultInstances<StackFrame>(256);
         internal ushort[] u_stack = new ushort[1024];
         internal int u_frameptr;
         internal int u_stackptr;
@@ -196,7 +220,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
         internal int zch_code;
 
         internal byte[] instruction_use = new byte[256];
-        internal sbyte break_on;
+        internal bool break_on;
         internal string instruction_bkpt = new string(new char[256]);
         internal uint[] address_bkpt = new uint[16];
         internal uint continuing;
@@ -215,7 +239,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
         Action<ushort, ushort> set_child = (o, v) => { };
         Func<uint, uint> attribute = (o) =>  0;
         Func<uint, int> obj_prop_addr = (o) => 0;
-
+        
         /*void obj_tree_put(ushort obj, int f, ushort v)
         {
             if (zmachineVersion > 3) write16(object_table + 118 + obj * 14 + f * 2, v);
@@ -229,14 +253,14 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                 obj_tree_get = (o, f) => read16((int)(object_table + 118 + ((uint)o) * 14 + (f) * 2));
                 obj_tree_put = (obj, f, v) => write16((int)(object_table + 118 + obj * 14 + f * 2), v);
                 attribute = (o) => object_table + 112 + (o) * 14;
-                obj_prop_addr = (o) => read16((int)(object_table + 124 + (o) * 14)) << address_shift;
+                obj_prop_addr = (o) => read16((int) (object_table + 60 + (o) * 9)) << address_shift;
             }
             else
             {
                 obj_tree_get = (o, f) => memory[(int)(object_table + 57 + ((uint)o) * 9 + (f))];
                 obj_tree_put = (obj, f, v) => memory[(int) (object_table + 57 + obj * 9 + f)] = (byte)v;
                 attribute = (o) => object_table + 53 + (o) * 9;
-                obj_prop_addr = (o) => read16((int) (object_table + 60 + (o) * 9)) << address_shift;
+                obj_prop_addr = (o) => read16((int) (object_table + 124 + (o) * 14)) << address_shift;
             }
             parent = (o) => obj_tree_get(o, 0);
             sibling = (o) => obj_tree_get(o, 1);
@@ -366,6 +390,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
             }
 
             runtime.Write(text_buffer);
+            text_buffer = "";
             //fileIO.FPuts(text_buffer, stdout);
             cur_column += textptr;
             //fflush(stdout);
@@ -407,6 +432,47 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
         void storei(int value)
         {
             store(memory[program_counter++], value);
+        }
+
+        void switch_output(int st)
+        {
+            switch (st)
+            {
+                case 1:
+                    texting = true;
+                    break;
+                case 2:
+                    memory[0x11] |= 1;
+                    break;
+                case 3:
+                    if (stream3ptr != 15)
+                    {
+                        stream3addr[++stream3ptr] = inst_args[1];
+                        write16((int)inst_args[1], 0);
+                    }
+                    break;
+                case 4:
+                    if (outlog > 0)
+                    {
+                        logging = true;
+                    }
+                    break;
+                case -1:
+                    texting = false;
+                    break;
+                case -2:
+                    memory[0x11] &= 254; //~1 which 1 is 000000001, so 11111110 (254) is the answer
+                    break;
+                case -3:
+                    if (stream3ptr != -1)
+                    {
+                        stream3ptr--;
+                    }
+                    break;
+                case -4:
+                    logging = false;
+                    break;
+            }
         }
 
         ushort aux_restore()
@@ -555,7 +621,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
             int d;
             int o;
 
-            fp = await fileIO.PickFileForReadAsync(Path.GetFileNameWithoutExtension(story_name) + ".sav", new[] { ".sav" }, 0);
+            fp = await fileIO.PickFileForReadAsync(new[] { ".sav" }, 0);
 
             if (fp <= 0)
                 return;
@@ -803,6 +869,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
 
         void char_print(byte zscii)
         {
+            bool reset = false; 
             if (zscii == 0)
                 return;
             if (stream3ptr != -1)
@@ -828,19 +895,25 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
             {
                 if ((zscii & 0x80) != 0)
                 {
-                    sb[textptr++] = zscii_conv_1[zscii & 0x7F];
-                    if (zscii_conv_2[zscii & 0x7F])
-                    {
-                        sb[textptr++] = zscii_conv_2[zscii & 0x7F];
-                    }
+                    textptr++;
+                    while (sb.Length < textptr + 1)
+                        sb.Append(' ');
+                        
+                    sb[textptr] = zscii_conv_1[zscii & 0x7F];
                 }
                 else if ((zscii & 0x6F) != 0)
                 {
-                    sb[textptr++] = zscii;
+                    textptr++;
+
+                    while (sb.Length < textptr + 1)
+                        sb.Append(' ');
+                    
+                    sb[textptr] = (char)zscii;
                 }
                 if (zscii <= 32 || textptr > 1000 || !buffering)
                 {
                     text_flush();
+                    reset = true;
                 }
                 if (zscii == 13)
                 {
@@ -854,7 +927,8 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     }
                 }
             }
-            text_buffer = sb.ToString();
+            if(!reset)
+                text_buffer = sb.ToString();
         }
 
         void zch_print(int z)
@@ -868,13 +942,13 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
             else if (zch_shift == 4)
             {
                 zch_code |= z;
-                char_print(zch_code);
+                char_print((char)zch_code);
                 zch_shift = zch_shiftlock;
             }
             else if (zch_shift >= 5)
             {
                 zsl = zch_shiftlock;
-                text_print(read16((int) (synonym_table + (z << 1) + ((zch_shift - 5) << 6))) << 1);
+                text_print((uint)(read16((int) (synonym_table + (z << 1) + ((zch_shift - 5) << 6))) << 1));
                 zch_shift = zch_shiftlock = zsl;
             }
             else if (z == 0)
@@ -936,14 +1010,19 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                 }
                 else if (zmachineVersion == 1)
                 {
-                    char_print(v1alpha[z + (zch_shift * 26) - 6]);
+                    char_print(v1alphaChars[z + (zch_shift * 26) - 6]);
                 }
                 else
                 {
-                    char_print(v2alpha[z + (zch_shift * 26) - 6]);
+                    char_print(v2alphaChars[z + (zch_shift * 26) - 6]);
                 }
                 zch_shift = zch_shiftlock;
             }
+        }
+
+        uint text_print(int address)
+        {
+            return text_print((uint) address);
         }
 
         uint text_print(uint address)
@@ -952,7 +1031,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
             zch_shift = zch_shiftlock = 0;
             for (;;)
             {
-                t = read16(address);
+                t = read16((int)address);
                 address += 2;
                 zch_print((t >> 10) & 31);
                 zch_print((t >> 5) & 31);
@@ -1049,73 +1128,80 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
             //return (sum == read16(0x1C));
         }
 
-        byte system_input(string[] @out)
+        async Task<Tuple<byte, string>> system_input()
         {
-            string p;
+            string stringOut = "";
             uint i;
             input_again:
-            GlobalMembersFweep.text_flush();
+            text_flush();
             cur_row = 2;
             cur_column = 0;
-            if (!fgets(text_buffer, 1023, stdin))
+            //if (!fgets(text_buffer, 1023, stdin))
+            var text_buffer = (await runtime.GetLineAsync());
+            var sbtb = new StringBuilder(text_buffer);
+            if (text_buffer.Length <= 0)
             {
-                Console.Error.Write("*** Unable to continue.\n");
-                Environment.Exit(1);
+                runtime.Debug.LogError("*** Unable to continue.\n");
+                execresult = ExecutionResult.ERR_UNKNOWN;
+                return await Task.FromResult(new Tuple<byte, string>(0, stringOut));
             }
-            p = text_buffer.Substring(text_buffer.Length);
-            while (p != text_buffer && p[-1] < 32)
+            if (escape_code != 0 && sbtb[1] == escape_code)
             {
-                *--p = 0; // Let's removing "CRLF", etc
-            }
-            if (escape_code != 0 && *text_buffer == escape_code)
-            {
-                @out = text_buffer.Substring(2);
-                switch (text_buffer[1])
+                stringOut = text_buffer.Substring(2);
+                switch (sbtb[1])
                 {
                     case '"':
-                        text_buffer[1] = escape_code;
-                        @out = text_buffer.Substring(1);
+                        sbtb[1] = escape_code;
+                        stringOut = sbtb.ToString().Substring(1);
                         break;
-                    case '1'... '9':
-			return text_buffer[1] + 133 - '1';
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
+			            return new Tuple<byte, string>((byte) (sbtb[1] + 133 - '1'), stringOut);
                     case ';':
-                        if (transcript)
+                        if (transcript != 0)
                         {
-                            fputc(0, transcript);
-                            fputs(text_buffer.Substring(2), transcript);
-                            fputc(13, transcript);
+                            fileIO.FPutc(0, transcript);
+                            fileIO.FPuts(text_buffer.Substring(2), transcript);
+                            fileIO.FPutc(13, transcript);
                         }
                         goto input_again;
                     case '<':
-                        return 131;
+                        return new Tuple<byte, string>(131, stringOut);
                     case '>':
-                        return 132;
+                        return new Tuple<byte, string>(132, stringOut);
                     case '?':
-                        fputs("Arrow keys: ^v<>    Function keys: 123456789\n" + "Other keys: x (delete) s (space) e (escape) \" (escape_code)\n" + " B0 = breakpoints off   B1 = breakpoints on\n" + " F0 = read keyboard   F1 = read logged input\n" + " L0 = disable input logging   L1 = enable input logging\n" + " S0 = transcript off   S1 = transcript on\n" + " U = instruction usage   U* = save instruction usage to file\n" + " Y = clear instruction usage\n" + " ;* = send comment to transcript\n" + " b = break into debugger\n" + " q = quit\n" + " r* = initialize random number generator\n" + " y = show status line (version 1, 2, 3 only)\n", stderr);
+                        runtime.Debug.LogError("Arrow keys: ^v<>    Function keys: 123456789\n" + "Other keys: x (delete) s (space) e (escape) \" (escape_code)\n" + " B0 = breakpoints off   B1 = breakpoints on\n" + " F0 = read keyboard   F1 = read logged input\n" + " L0 = disable input logging   L1 = enable input logging\n" + " S0 = transcript off   S1 = transcript on\n" + " U = instruction usage   U* = save instruction usage to file\n" + " Y = clear instruction usage\n" + " ;* = send comment to transcript\n" + " b = break into debugger\n" + " q = quit\n" + " r* = initialize random number generator\n" + " y = show status line (version 1, 2, 3 only)\n");
                         goto input_again;
                     case 'B':
-                        break_on = text_buffer[2] & 1;
+                        break_on = (sbtb[2] & 1) != 0;
                         goto input_again;
                     case 'F':
-                        from_log = text_buffer[2] & 1;
+                        from_log = (sbtb[2] & 1) != 0;
                         goto input_again;
                     case 'L':
-                        logging = text_buffer[2] & 1;
+                        logging = (sbtb[2] & 1) != 0;
                         goto input_again;
                     case 'S':
                         memory[0x11] &= 0xFE;
-                        memory[0x11] |= text_buffer[2] & 1;
+                        memory[0x11] |= (byte) (sbtb[2] & 1);
                         goto input_again;
                     case 'U':
-                        if (text_buffer[2])
+                        if (sbtb[2] != 0)
                         {
-                            FILE fp = fopen(text_buffer.Substring(2), "wb");
-                            if (fp == null)
+                            int fp = fileIO.FOpen(text_buffer.Substring(2), "wb");
+                            if (fp <= 0)
                             {
                                 goto input_again;
                             }
-                            fwrite(instruction_use, 1, 256, fp);
-                            fclose(fp);
+                            fileIO.FWrite(instruction_use, 1, 256, fp);
+                            fileIO.FClose(fp);
                         }
                         else
                         {
@@ -1123,59 +1209,318 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                             {
                                 if ((instruction_use[i] & 0x06) != 0)
                                 {
-                                    Console.Write(".{0:X2}.\n", i);
+                                    runtime.Write(".{0:X2}.\n", i);
                                 }
                             }
                         }
                         goto input_again;
                     case 'Y':
                         //C++ TO C# CONVERTER TODO TASK: The memory management function 'memset' has no equivalent in C#:
-                        memset(instruction_use, 0, 256);
+                        //memset(instruction_use, 0, 256);
+                        for (var iz = 0; iz < 256; iz++)
+                            instruction_use[iz] = 0;
                         goto input_again;
                     case '^':
-                        return 129;
+                        return new Tuple<byte, string>(129, stringOut);
                     case 'b':
-                        GlobalMembersFweep.debugger();
-                        if (lastdebug != 0)
+                        debugger();
+                        if (lastdebug)
                         {
-                            return 0;
+                            return new Tuple<byte, string>(0, stringOut);
                         }
                         goto input_again;
                     case 'e':
-                        return 27;
+                        return new Tuple<byte, string>(27, stringOut);
                     case 'q':
-                        Environment.Exit(0);
+                        execresult = ExecutionResult.ERR_STATE_QUIT;
+                        return new Tuple<byte, string>(0, stringOut);
                         break;
                     case 'r':
-                        GlobalMembersFweep.randomize(strtol(text_buffer.Substring(2), 0, 0));
+                        ushort val = 1;
+                        ushort.TryParse(text_buffer.Substring(2), out val);
+
+                        randomize(val);
                         goto input_again;
                     case 's':
-                        text_buffer[1] = ' ';
-                        @out = text_buffer.Substring(1);
+                        sbtb[1] = ' ';
+                        stringOut = sbtb.ToString().Substring(1);
                         break;
                     case 'v':
-                        return 130;
+                        return new Tuple<byte, string>(130, stringOut);
                     case 'x':
-                        return 8;
+                        return new Tuple<byte, string>(8, stringOut);
                     case 'y':
-                        if (memory > 3)
+                        if (zmachineVersion > 3)
                         {
-                            Console.Error.Write("*** Status line not available in this Z-machine version.\n");
+                            runtime.Debug.LogError("*** Status line not available in this Z-machine version.\n");
                         }
                         else
                         {
-                            GlobalMembersFweep.text_print((GlobalMembersFweep.read16(memory > 3 ? (object_table + 124 + (GlobalMembersFweep.fetch(16)) * 14) : (object_table + 60 + (GlobalMembersFweep.fetch(16)) * 9)) << address_shift) + 1);
-                            GlobalMembersFweep.char_print(13);
-                            printf(memory == 3 && ((memory[0x01] & 2) != 0) ? "Time: %02u:%02u\n" : "Score: %d\nTurns: %d\n", (short)GlobalMembersFweep.fetch(17), GlobalMembersFweep.fetch(18));
+                            text_print((uint) (obj_prop_addr(fetch(16)) + 1));
+                            char_print(13);
+                            runtime.Write(
+                                zmachineVersion == 3 && ((memory[0x01] & 2) != 0) ? 
+                                    "Time: %02u:%02u\n" : 
+                                    "Score: %d\nTurns: %d\n", 
+                                (short)fetch(17), fetch(18));
                         }
                         goto input_again;
                 }
             }
             else
             {
-                @out = text_buffer;
+                stringOut = text_buffer;
             }
-            return 13;
+            return new Tuple<byte, string>(13, stringOut);            
+        }
+
+        void tokenise(uint text, uint dict, uint parsebuf, int len, ushort flag)
+        {
+            var ws = new StringBuilder(new string(new char[256]));
+            byte[] d = new byte[10];
+            int i;
+            int el;
+            int ne;
+            int k;
+            int p;
+            int p1;
+            //C++ TO C# CONVERTER TODO TASK: The memory management function 'memset' has no equivalent in C#:
+            //memset(ws, 0, 256 * sizeof(sbyte));
+            for (var z = 0; z < 256; z++)
+                ws[z] = (char) 0;
+            if (dict == 0)
+            {
+                for (i = 1; i <= memory[dictionary_table]; i++)
+                {
+                    ws[memory[dictionary_table + i]] = (char)1;
+                }
+                dict = dictionary_table;
+            }
+            for (i = 1; i <= memory[dict]; i++)
+            {
+                ws[memory[dict + i]] = (char)1;
+            }
+            memory[parsebuf + 1] = 0;
+            k = p = p1 = 0;
+            el = memory[dict + memory[dict] + 1];
+            ne = read16((int) (dict + memory[dict] + 2));
+            if (ne < 0)
+            {
+                ne *= -1; // Currently, it won't care about the order; it doesn't use binary search.
+            }
+            dict += (uint)memory[dict] + 4;
+            while (p < len && memory[text + p] != 0 && memory[parsebuf + 1] < memory[parsebuf])
+            {
+                i = memory[text + p];
+                if (i >= 'A' && i <= 'Z')
+                {
+                    i += 'a' - 'A';
+                }
+                //if (i == '?' && opts['q'] != 0)
+                //{
+                //    i = ' ';
+                //}
+                if (i == ' ')
+                {
+                    if (k != 0)
+                    {
+                        add_to_parsebuf(parsebuf, dict, d, k, el, ne, p1, flag);
+                        k = 0;
+                    }
+                    p1 = p + 1;
+                }
+                else if (ws[i] != 0)
+                {
+                    if (k != 0)
+                    {
+                        add_to_parsebuf(parsebuf, dict, d, k, el, ne, p1, flag);
+                        k = 0;
+                    }
+                    p1 = p + 1;
+                    d[0] = (byte)i;
+                    k = 1;
+                    if (k != 0)
+                    {
+                        add_to_parsebuf(parsebuf, dict, d, k, el, ne, p1, flag);
+                        k = 0;
+                    }
+                    p1 = p + 1;
+                }
+                else if (k < 10)
+                {
+                    d[k++] = (byte)i;
+                }
+                else
+                {
+                    k++;
+                }
+                p++;
+            }
+            if (k != 0)
+            {
+                add_to_parsebuf(parsebuf, dict, d, k, el, ne, p1, flag);
+                k = 0;
+            }
+            p1 = p + 1;
+        }
+
+        ulong dictionary_encode(byte[] text, int len)
+        {
+            ulong v = 0;
+            int c = zmachineVersion > 3 ? 9 : 6;
+            int i;
+            byte[] al = new byte[256];
+            if (alphabet_table != 0)
+                Array.Copy(memory, (int)alphabet_table, al, 0, 256);
+            else
+                al = (zmachineVersion > 1 ? v2alphaChars : v1alphaChars).Select(cz => (byte) cz).ToArray();
+
+            var textLoc = 0;
+            while (c != 0 && len != 0 && text[textLoc] != 0)
+            {
+                // Since line breaks cannot be in an input line of text, and VAR:252 is only available in version 5, line breaks need not be considered here.
+                // However, because of VAR:252, spaces still need to be considered.
+                if ((c % 3) != 0)
+                {
+                    v <<= 1;
+                }
+                if (text[textLoc] == (byte) ' ')
+                {
+                    v <<= 5;
+                }
+                else
+                {
+                    for (i = 0; i < 78; i++)
+                    {
+                        if (text[textLoc] == al[i] && i != 52 && i != 53)
+                        {
+                            v <<= 5;
+                            if (i >= 26)
+                            {
+                                v |= (ulong) (i / 26 + (zmachineVersion > 2 ? 3 : 1));
+                                c--;
+                                if (c == 0)
+                                {
+                                    return v | 0x8000;
+                                }
+                                if ((c % 3) != 0)
+                                {
+                                    v <<= 1;
+                                }
+                                v <<= 5;
+                            }
+                            v |= (ulong) ((i % 26) + 6);
+                            break;
+                        }
+                    }
+                    if (i == 78)
+                    {
+                        v <<= 5;
+                        v |= (ulong)(zmachineVersion > 2 ? 5 : 3);
+                        c--;
+                        if (c == 0)
+                        {
+                            return v | 0x8000;
+                        }
+                        if ((c % 3) != 0)
+                        {
+                            v <<= 1;
+                        }
+                        v <<= 5;
+                        v |= 6;
+                        c--;
+                        if (c == 0)
+                        {
+                            return v | 0x8000;
+                        }
+                        if ((c % 3) != 0)
+                        {
+                            v <<= 1;
+                        }
+                        v <<= 5;
+                        v |= (ulong)(text[textLoc] >> 5);
+                        c--;
+                        if (c == 0)
+                        {
+                            return v | 0x8000;
+                        }
+                        if ((c % 3) != 0)
+                        {
+                            v <<= 1;
+                        }
+                        v <<= 5;
+                        v |= (ulong)(text[textLoc] & 31);
+                    }
+                }
+                c--;
+                textLoc++;
+                len--;
+            }
+            while (c != 0)
+            {
+                if ((c % 3) != 0)
+                {
+                    v <<= 1;
+                }
+                v <<= 5;
+                v |= 5;
+                c--;
+            }
+            return v | 0x8000;
+        }
+
+        ulong dictionary_get(uint addr)
+        {
+            ulong v = 0;
+            int c = zmachineVersion > 3 ? 6 : 4;
+            while (c-- != 0)
+            {
+                v = (v << 8) | memory[addr++];
+            }
+            return v;
+        }
+
+        void add_to_parsebuf(uint parsebuf, uint dict, byte[] d, int k, int el, int ne, int p, ushort flag)
+        {
+            ulong v = dictionary_encode(d, k);
+            ulong g;
+            int i;
+            //if (opts['d'] != 0)
+            //{
+            //    Console.Error.Write("** Word at {0:D} (length {1:D}): \"", p, k);
+            //    for (i = 0; i < k; i++)
+            //    {
+            //        fputc(d[i], stderr);
+            //    }
+            //    Console.Error.Write("\"\n");
+            //}
+            for (i = 0; i < ne; i++)
+            {
+                g = dictionary_get(dict) | 0x8000;
+                if (g == v)
+                {
+                    //if (opts['d'] != 0)
+                    //{
+                    //    Console.Error.Write("** Found at ${0:X8}\n", dict);
+                    //}
+                    memory[parsebuf + (memory[parsebuf + 1] << 2) + 5] = (byte)(p + 1 + (zmachineVersion > 4 ? 1 : 0));
+                    memory[parsebuf + (memory[parsebuf + 1] << 2) + 4] = (byte)k;
+                    write16((int)(parsebuf + (memory[parsebuf + 1] << 2) + 2), (int)dict);
+                    break;
+                }
+                dict += (uint)el;
+            }
+            if (i == ne && flag == 0)
+            {
+                //if (opts['d'] != 0)
+                //{
+                //    Console.Error.Write("** Not found\n");
+                //}
+                memory[parsebuf + (memory[parsebuf + 1] << 2) + 5] = (byte)(p + 1 + (zmachineVersion > 4 ? 1 : 0));
+                memory[parsebuf + (memory[parsebuf + 1] << 2) + 4] = (byte)k;
+                write16((int)(parsebuf + (memory[parsebuf + 1] << 2) + 2), 0);
+            }
+            memory[parsebuf + 1]++;
         }
 
         async Task<byte> line_input()
@@ -1221,15 +1566,20 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
             //}
             //else
             //{
-                //if (opts['n'] != 0 && memory < 4 && ((short)GlobalMembersFweep.fetch(17)) != oldscore)
-                //{
-                //    c = ((short)GlobalMembersFweep.fetch(17)) - oldscore;
-                //    Console.Write("\n[The score has been {0}creased by {1:D}.]\n", c >= 0 ? "in" : "de", c >= 0 ? c : -c);
-                //    oldscore = (short)GlobalMembersFweep.fetch(17);
-                //}
-                res = await system_input(ptr);
-                if (lastdebug)
-                    return await Task.FromResult((byte) 0);
+            //if (opts['n'] != 0 && memory < 4 && ((short)fetch(17)) != oldscore)
+            //{
+            //    c = ((short)fetch(17)) - oldscore;
+            //    Console.Write("\n[The score has been {0}creased by {1:D}.]\n", c >= 0 ? "in" : "de", c >= 0 ? c : -c);
+            //    oldscore = (short)fetch(17);
+            //}
+            ptr = "";
+            var tpl = await system_input();
+            ptr = tpl.Item2;
+            res = tpl.Item1;
+            if(execresult != ExecutionResult.ERR_NO_ERRORS)
+                return await Task.FromResult((byte) 0); 
+            if (lastdebug)
+                return await Task.FromResult((byte) 0);
             //}
             if (logging && outlog > 0)
             {
@@ -1279,7 +1629,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                 memory[inst_args[0] + 1] = (byte)c;
                 if (inst_args[1] != 0)
                 {
-                    tokenise(inst_args[0] + 2, 0, inst_args[1], c, 0);
+                    tokenise((uint)(inst_args[0] + 2), 0, inst_args[1], c, 0);
                 }
             }
             else
@@ -1290,10 +1640,67 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     ++c;
                 }
                 memory[c + 1] = 0;
-                tokenise(inst_args[0] + 1, 0, inst_args[1], c, 0);
+                tokenise((uint) (inst_args[0] + 1), 0, inst_args[1], c, 0);
             }
             return res;
         }
+
+        async Task<byte> char_input()
+        {
+            StringBuilder ptr;
+            byte res;
+            if (from_log && inlog != 0 && fileIO.FEof(inlog))
+            {
+                from_log = false;
+            }
+            if (from_log)
+            {
+                res = (byte)fileIO.FGetc(inlog);
+            }
+            else
+            {
+                var tpl = await system_input();
+                if (execresult != ExecutionResult.ERR_NO_ERRORS)
+                    return 0;
+                ptr = new StringBuilder(tpl.Item2);
+                res = tpl.Item1;
+                
+                if (res == 13 && ptr[0] != 0)
+                {
+                    res = (byte)ptr[0];
+                }
+            }
+            if (logging && outlog != 0)
+            {
+                fileIO.FPutc(res, outlog);
+            }
+            return res;
+        }
+
+        void make_rectangle(uint addr, int width, int height, int skip)
+        {
+            int old_column = cur_column;
+            int w;
+            int h;
+            for (h = 0; h < height; h++)
+            {
+                for (w = 0; w < width; w++)
+                {
+                    char_print(memory[addr++]);
+                }
+                addr += (uint)skip;
+                if (h != height - 1)
+                {
+                    char_print(13);
+                    for (w = 0; w < old_column; w++)
+                    {
+                        char_print(32);
+                    }
+                }
+            }
+            text_flush();
+        }
+
         #endregion
 
         async Task<ExecutionResult> StartAsyncTask(bool debugMessages)
@@ -1303,7 +1710,9 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
             var fileExt = fileIO.GetFileNames().Where(i => i.Contains(".")).Select(i => i.Substring(i.LastIndexOf(".")))
                 .First(i => KnownExtensions.Contains(i.ToLower()));
 
-            story_name = fileIO.GetFileNames().First(i => i.ToLower().EndsWith(fileExt));
+            var fnames = fileIO.GetFileNames();
+
+            story_name = fnames.First(i => i.ToLower().EndsWith(fileExt.ToLower()));
                         
             if (story_name.Length == 0)
             {
@@ -1356,7 +1765,6 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
 
         async Task<ExecutionResult> game_begin()
         {
-            var done = false;
             await Task.Run(() =>
             {
                 int i;
@@ -1368,9 +1776,8 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                 {
                     runtime.WriteLine("\n*** Unable to load story file: {0}", story_name);
                     execresult = ExecutionResult.ERR_BADFILE;
-                    done = true;
                 }
-                if(!done)
+                if(execresult == ExecutionResult.ERR_NO_ERRORS)
                 { 
                     //if (opts['a'] != 0 && auxfile == null)
                     //{
@@ -1412,9 +1819,6 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     switch (zmachineVersion)
                     {
                         case 1:
-                            packed_shift = 1;
-                            memory[0x01] = 0x10;
-                            break;
                         case 2:
                             packed_shift = 1;
                             memory[0x01] = 0x10;
@@ -1463,10 +1867,10 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                         default:
                             unsupported:
                             runtime.Debug.LogError("\n*** Unsupported Z-machine version: {0:D}\n", memory[0]);
-                            done = true;
+                            execresult = ExecutionResult.ERR_UNKNOWN;
                             break;
                     }
-                    if (!done)
+                    if (execresult == ExecutionResult.ERR_NO_ERRORS)
                     {
                         restart_address = (uint)(read16(0x06) << address_shift);
                         dictionary_table = (uint) (read16(0x08) << address_shift);
@@ -1660,7 +2064,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                 currentInstruction |= 0xC0;
                 argc = 2;
             }
-            if (break_on != 0)
+            if (break_on)
             {
                 if (continuing == u || continuing == program_counter)
                 {
@@ -1705,7 +2109,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                 }
             }
             instruction_use[currentInstruction] |= (byte)(argc != 0 ? 0x04 : 0x02);
-            lastdebug = 0;
+            lastdebug = false;
             switch (currentInstruction)
 	        {
 		        case 0x00: // Save game or auxiliary file
@@ -1726,15 +2130,15 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     }
                     break;
 		        case 0x02: // Logical shift
-		        if ((short) inst_args[1] > 0)
-                {
-                    storei(inst_args[0] << inst_args[1]);
-                }
-                else
-                {
-                    storei(inst_args[0] >> -inst_args[1]);
-                }
-                break;
+		            if ((short) inst_args[1] > 0)
+                    {
+                        storei(inst_args[0] << inst_args[1]);
+                    }
+                    else
+                    {
+                        storei(inst_args[0] >> -inst_args[1]);
+                    }
+                    break;
 		        case 0x03: // Arithmetic shift
 		            if ((short) inst_args[1] > 0)
                     {
@@ -1747,6 +2151,8 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     break;
         		case 0x04: // Set font
 		            await text_flush();
+                    if (execresult != ExecutionResult.ERR_NO_ERRORS)
+                        return execresult;
                     storei((inst_args[inst_args_index] == 1 || inst_args[inst_args_index] == 4) ? 4 : 0);
                     //if (opts['t'] == 0)
                     //{
@@ -1775,7 +2181,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     }
                     break;
 		        case 0x09: // Save undo buffer
-		            if (allow_undo != 0)
+		            if (allow_undo)
                     {
                         //C++ TO C# CONVERTER TODO TASK: The memory management function 'memcpy' has no equivalent in C#:
                         //memcpy(u_frames, frames, sizeof(StackFrame));
@@ -1796,167 +2202,167 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                         storei(-1);
                     }
                     break;
-		            case 0x0A: // Restore undo buffer
-		                if (allow_undo != 0)
-                        {
-                            //C++ TO C# CONVERTER TODO TASK: The memory management function 'memcpy' has no equivalent in C#:
-                            //memcpy(frames, u_frames, sizeof(StackFrame));
-                            Array.Copy(frames, u_frames, 1);
+		        case 0x0A: // Restore undo buffer
+		            if (allow_undo)
+                    {
+                        //C++ TO C# CONVERTER TODO TASK: The memory management function 'memcpy' has no equivalent in C#:
+                        //memcpy(frames, u_frames, sizeof(StackFrame));
+                        Array.Copy(frames, u_frames, 1);
 
-                            //C++ TO C# CONVERTER TODO TASK: The memory management function 'memcpy' has no equivalent in C#:
-                            //memcpy(stack, u_stack, sizeof(ushort));
-                            Array.Copy(stack, u_stack, 1);
+                        //C++ TO C# CONVERTER TODO TASK: The memory management function 'memcpy' has no equivalent in C#:
+                        //memcpy(stack, u_stack, sizeof(ushort));
+                        Array.Copy(stack, u_stack, 1);
 
-                            //C++ TO C# CONVERTER TODO TASK: The memory management function 'memcpy' has no equivalent in C#:
-                            //memcpy(memory + 0x40, undomem, static_start - 0x40);
-                            Array.Copy(memory, 0x40, undomem, 0, (int) static_start - 0x40);
-                            frameptr = u_frameptr;
-                            stackptr = u_stackptr;
-                            program_counter = u_program_counter;
-                            storei((argc != 0 && zmachineVersion > 8) ? inst_args[0] : 2);
-                        }
-                        else
-                        {
-                            storei(-1);
-                        }
-                        break;
-		            case 0x0B: // Call byte address
-		                program_counter++;
-                        enter_routine(inst_args[inst_args_index], true, argc - 1);
-                        break;
-		            case 0x0C: // Get reference to stack or local variables
-		                if (inst_args != null)
-                        {
-                            storei(stackptr - 1);
-                        }
-                        else
-                        {
-                            storei(frames[(int)frameptr].start + inst_args[inst_args_index - 1]);
-                        }
-                        break;
-		            case 0x0D: // Read through stack/locals reference
-		                storei(stack[inst_args[inst_args_index]]);
-                        break;
-		            case 0x0E: // Write through stack/locals reference
-		                if (inst_args[inst_args_index] < 1024)
-                        {
-                            stack[inst_args[inst_args_index]] = inst_args[1];
-                        }
-                        break;
-		            case 0x0F: // Read byte from long property
-		                u = property_address(inst_args[0], (byte)inst_args[1]);
-                        storei(memory[u]);
-                        break;
-		            case 0x1D: // Read word from long property
-		                u = property_address(inst_args[0], (byte) inst_args[1]);
-                        storei(read16((int)u));
-                        break;
-		            case 0x80: // Jump if zero
-		                branch(inst_args[inst_args_index] == 0 );
-                        break;
-		            case 0x81: // Sibling
-		                storei(sibling(inst_args[inst_args_index]));
-                        branch(sibling(inst_args[inst_args_index]) != 0);
+                        //C++ TO C# CONVERTER TODO TASK: The memory management function 'memcpy' has no equivalent in C#:
+                        //memcpy(memory + 0x40, undomem, static_start - 0x40);
+                        Array.Copy(memory, 0x40, undomem, 0, (int) static_start - 0x40);
+                        frameptr = u_frameptr;
+                        stackptr = u_stackptr;
+                        program_counter = u_program_counter;
+                        storei((argc != 0 && zmachineVersion > 8) ? inst_args[0] : 2);
+                    }
+                    else
+                    {
+                        storei(-1);
+                    }
                     break;
-		            case 0x82: // Child
-                        storei(child(inst_args[inst_args_index]));
-                        branch(child(inst_args[inst_args_index]) != 0);
-                        break;
-		            case 0x83: // Parent
-                        storei(parent(inst_args[inst_args_index]));
-                        break;
-		            case 0x84: // Property length
-                        currentInstruction = memory[inst_args[inst_args_index] - 1];
-                        storei(zmachineVersion < 4 ? 
-                            (currentInstruction >> 5) + 1:
-                            ( (currentInstruction & 0x80) != 0 ? 
-                                ( (currentInstruction & 63) == 0 ? 
-                                    64 :
-                                    ((currentInstruction >> 6) +1)
-                                ) : ((currentInstruction >> 6) + 1)
-                            )
-                        );
-                        break;
-		            case 0x85: // Increment
-		                store((byte) inst_args[inst_args_index], (byte)(fetch((byte) inst_args[inst_args_index]) + 1));
-                        break;
-		            case 0x86: // Decrement
-		                store((byte) inst_args[inst_args_index], (byte) fetch((byte) inst_args[inst_args_index]) - 1);
-                        break;
-		            case 0x87: // Print by byte address
-		                text_print(inst_args[inst_args_index]);
-                        break;
-		            case 0x88: // Call routine
-		                if (inst_args[inst_args_index] != 0)
+		        case 0x0B: // Call byte address
+		            program_counter++;
+                    enter_routine(inst_args[inst_args_index], true, argc - 1);
+                    break;
+		        case 0x0C: // Get reference to stack or local variables
+		            if (inst_args != null)
+                    {
+                        storei(stackptr - 1);
+                    }
+                    else
+                    {
+                        storei(frames[(int)frameptr].start + inst_args[inst_args_index - 1]);
+                    }
+                    break;
+		        case 0x0D: // Read through stack/locals reference
+		            storei(stack[inst_args[inst_args_index]]);
+                    break;
+		        case 0x0E: // Write through stack/locals reference
+		            if (inst_args[inst_args_index] < 1024)
+                    {
+                        stack[inst_args[inst_args_index]] = inst_args[1];
+                    }
+                    break;
+		        case 0x0F: // Read byte from long property
+		            u = property_address(inst_args[0], (byte)inst_args[1]);
+                    storei(memory[u]);
+                    break;
+		        case 0x1D: // Read word from long property
+		            u = property_address(inst_args[0], (byte) inst_args[1]);
+                    storei(read16((int)u));
+                    break;
+		        case 0x80: // Jump if zero
+		            branch(inst_args[inst_args_index] == 0 );
+                    break;
+		        case 0x81: // Sibling
+		            storei(sibling(inst_args[inst_args_index]));
+                    branch(sibling(inst_args[inst_args_index]) != 0);
+                break;
+		        case 0x82: // Child
+                    storei(child(inst_args[inst_args_index]));
+                    branch(child(inst_args[inst_args_index]) != 0);
+                    break;
+		        case 0x83: // Parent
+                    storei(parent(inst_args[inst_args_index]));
+                    break;
+		        case 0x84: // Property length
+                    currentInstruction = memory[inst_args[inst_args_index] - 1];
+                    storei(zmachineVersion < 4 ? 
+                        (currentInstruction >> 5) + 1:
+                        ( (currentInstruction & 0x80) != 0 ? 
+                            ( (currentInstruction & 63) == 0 ? 
+                                64 :
+                                ((currentInstruction >> 6) +1)
+                            ) : ((currentInstruction >> 6) + 1)
+                        )
+                    );
+                    break;
+		        case 0x85: // Increment
+		            store((byte) inst_args[inst_args_index], (byte)(fetch((byte) inst_args[inst_args_index]) + 1));
+                    break;
+		        case 0x86: // Decrement
+		            store((byte) inst_args[inst_args_index], (byte) fetch((byte) inst_args[inst_args_index]) - 1);
+                    break;
+		        case 0x87: // Print by byte address
+		            text_print(inst_args[inst_args_index]);
+                    break;
+		        case 0x88: // Call routine
+		            if (inst_args[inst_args_index] != 0)
+                    {
+                        program_counter++;
+                        enter_routine((uint)((inst_args[inst_args_index] << packed_shift) + routine_start), true, argc - 1);
+                    }
+                    else
+                    {
+                        storei(0);
+                    }
+                    break;
+		        case 0x89: // Remove object
+		            insert_object(inst_args[inst_args_index], 0);
+                    break;
+		        case 0x8A: // Print short name of object
+		            text_print(obj_prop_addr((uint)(inst_args[inst_args_index] + 1)));
+                    break;
+		        case 0x8B: // Return
+		            exit_routine(inst_args[inst_args_index]);
+                    break;
+		        case 0x8C: // Unconditional jump
+		            program_counter += (uint)((short) inst_args[inst_args_index] - 2);
+                    break;
+		        case 0x8D: // Print by packed address
+		            text_print((uint)((inst_args[inst_args_index] << packed_shift) + text_start));
+                    break;
+		        case 0x8E: // Load variable
+		            at = fetch((byte) inst_args[inst_args_index]);
+                    store((byte) inst_args[inst_args_index], at); // if it popped from the stack, please put it back on
+                    storei(at);
+                    break;
+		        case 0x8F: // Not // Call routine and discard result
+		            if (zmachineVersion > 4)
+                    {
+                        if (inst_args[inst_args_index] != 0)
                         {
-                            program_counter++;
-                            enter_routine((uint)((inst_args[inst_args_index] << packed_shift) + routine_start), true, argc - 1);
+                            enter_routine((uint) ((inst_args[inst_args_index] << packed_shift) + routine_start), false, argc - 1);
                         }
-                        else
-                        {
-                            storei(0);
-                        }
-                        break;
-		            case 0x89: // Remove object
-		                insert_object(inst_args[inst_args_index], 0);
-                        break;
-		            case 0x8A: // Print short name of object
-		                text_print((uint)obj_prop_addr((uint)(inst_args[inst_args_index] + 1)));
-                        break;
-		            case 0x8B: // Return
-		                exit_routine(inst_args[inst_args_index]);
-                        break;
-		            case 0x8C: // Unconditional jump
-		                program_counter += (uint)((short) inst_args[inst_args_index] - 2);
-                        break;
-		            case 0x8D: // Print by packed address
-		                text_print((uint)((inst_args[inst_args_index] << packed_shift) + text_start));
-                        break;
-		            case 0x8E: // Load variable
-		                at = fetch((byte) inst_args[inst_args_index]);
-                        store((byte) inst_args[inst_args_index], at); // if it popped from the stack, please put it back on
-                        storei(at);
-                        break;
-		            case 0x8F: // Not // Call routine and discard result
-		                if (zmachineVersion > 4)
-                        {
-                            if (inst_args[inst_args_index] != 0)
-                            {
-                                enter_routine((uint) ((inst_args[inst_args_index] << packed_shift) + routine_start), false, argc - 1);
-                            }
-                        }
-                        else
-                        {
-                            storei(~inst_args[inst_args_index]);
-                        }
-                        break;
-		            case 0xB0: // Return 1
-		                exit_routine(1);
-                        break;
-		            case 0xB1: // Return 0
-		                exit_routine(0);
-                        break;
-		            case 0xB2: // Print literal
-		                program_counter = text_print(program_counter);
-                        break;
-		            case 0xB3: // Print literal and return
-		                program_counter = text_print(program_counter);
-                        char_print(13);
-                        exit_routine(1);
-                        break;
-		            case 0xB4: // No operation
-		                //NOP
-		                break;
-		            case 0xB5: // Save
-		                if (zmachineVersion > 3)
-                        {
-                            await game_save(memory[program_counter++]);
-                        }
-                        else
-                        {
-                            await game_save(0);
-                        }
-                        break;
+                    }
+                    else
+                    {
+                        storei(~inst_args[inst_args_index]);
+                    }
+                    break;
+		        case 0xB0: // Return 1
+		            exit_routine(1);
+                    break;
+		        case 0xB1: // Return 0
+		            exit_routine(0);
+                    break;
+		        case 0xB2: // Print literal
+		            program_counter = text_print(program_counter);
+                    break;
+		        case 0xB3: // Print literal and return
+		            program_counter = text_print(program_counter);
+                    char_print(13);
+                    exit_routine(1);
+                    break;
+		        case 0xB4: // No operation
+		            //NOP
+		            break;
+		        case 0xB5: // Save
+		            if (zmachineVersion > 3)
+                    {
+                        await game_save(memory[program_counter++]);
+                    }
+                    else
+                    {
+                        await game_save(0);
+                    }
+                    break;
 		        case 0xB6: // Restore
 		            if (zmachineVersion > 3)
                     {
@@ -2065,7 +2471,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
 		        case 0xD1: // Read property
 		            if ((u = (uint) property_address(inst_args[0], (byte) inst_args[1])) != 0)
                     {
-                        storei(cur_prop_size == 1 ? memory[u] : read16(u));
+                        storei(cur_prop_size == 1 ? memory[u] : read16((int)u));
                     }
                     else
                     {
@@ -2150,7 +2556,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
 		        case 0xE0: // Call routine // Read from extended RAM
 		            if (zmachineVersion > 8)
                     {
-                        u = (uint)((inst_args[0] << address_shift) + (inst_args[1] << 1) + inst_args[2)];
+                        u = (uint)((inst_args[0] << address_shift) + (inst_args[1] << 1) + inst_args[2]);
                         storei(read16((int)u));
                     }
                     else if (inst_args[inst_args_index] != 0)
@@ -2181,8 +2587,11 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     }
                     break;
 		        case 0xE4: // Read line of input
-		            n = line_input();
-                    if (zmachineVersion > 4 && lastdebug == 0)
+		            n = await line_input();
+                    if (execresult != ExecutionResult.ERR_NO_ERRORS)
+                        return execresult;
+
+                    if (zmachineVersion > 4 && !lastdebug)
                     {
                         storei(n);
                     }
@@ -2254,7 +2663,8 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     }
                     else
                     {
-                        stack[stackptr - 2] = stack[stackptr - 1],stackptr--;
+                        stack[stackptr - 2] = stack[stackptr - 1];
+                        stackptr--;
                     }
                     break;
 		        case 0xEA: // Split window
@@ -2316,17 +2726,20 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
 		            switch_output((short) inst_args[inst_args_index]);
                     break;
 		        case 0xF4: // Select input stream
-		            if (inlog)
+		            if (inlog != 0)
                     {
                         from_log = inst_args[inst_args_index] != 0;
                     }
                     break;
 		        case 0xF5: // Sound effects
-                    runtime.Write((char)7); //Console.Write(7);
+                    //runtime.Write((char)7); //Console.Write(7);
                     break;
 		        case 0xF6: // Read a single character
-		            n = char_input();
-                    if (lastdebug == 0)
+		            n = (short)(await char_input());
+                    if (execresult != ExecutionResult.ERR_NO_ERRORS)
+                        return execresult;
+
+                    if (lastdebug)
                     {
                         storei(n);
                     }
@@ -2339,7 +2752,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     u = inst_args[1];
                     while (inst_args[2] != 0)
                     {
-                        if (inst_args == ((inst_args[3] & 0x80) != 0 ? read16(u) : memory[u]))
+                        if (inst_args[0] == ((inst_args[3] & 0x80) != 0 ? read16((int)u) : memory[u]))
                             break;
                         u += (uint)inst_args[3] & 0x7F;
                         inst_args[2]--;
@@ -2354,7 +2767,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
 		            if (zmachineVersion > 8)
                     {
                         u = ((uint)inst_args[0] << address_shift) + ((uint) inst_args[1] << 1) + (uint)inst_args[2];
-                        write16(u, inst_args[3]);
+                        write16((int)u, inst_args[3]);
                     }
                     else if (inst_args[inst_args_index] != 0)
                     {
@@ -2376,10 +2789,13 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     {
                         inst_args[2] = 0;
                     }
-                    tokenise(inst_args[0] + 2, inst_args[2], inst_args[1], memory[inst_args[0] + 1], inst_args[3]);
+                    tokenise((uint)(inst_args[0] + 2), inst_args[2], inst_args[1], memory[inst_args[0] + 1], inst_args[3]);
                     break;
 		        case 0xFC: // Encode text in dictionary format
-		            ulong execute_instruction_y = dictionary_encode(zmachineVersion + inst_args[0] + inst_args[2], inst_args[1]);
+                    var buffr = new byte[255];
+                    Array.Copy(memory, (int) (inst_args[0] + inst_args[2]), buffr, 0, 256);
+		            ulong execute_instruction_y = dictionary_encode(buffr, inst_args[1]);
+                    
                     write16(inst_args[3], (ushort)(execute_instruction_y >> 16));
                     write16(inst_args[3] + 2, (ushort) (execute_instruction_y >> 8));
                     write16(inst_args[3] + 4, (ushort) execute_instruction_y);
@@ -2412,7 +2828,8 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                         m = 0;
                         while (m < (short) inst_args[2])
                         {
-                            memory[inst_args[1] + m] = memory[inst_args[0] + m],m++;
+                            memory[inst_args[1] + m] = memory[inst_args[0] + m];
+                            m++;
                         }
                     }
                     break;
@@ -2428,7 +2845,7 @@ internal string v1alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 
                     return await Task.FromResult(ExecutionResult.ERR_UNKNOWN);
                     break;
             }
-            return await Task.FromResult(result);
+            return await Task.FromResult(execresult);
         }
 
         Task debugger()

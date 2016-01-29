@@ -11,7 +11,7 @@ namespace IFInterfaces.Services
 {
     public static class FileIOConstants
     {
-        public const int EOF = -1;
+        public static int EOF { get; private set; } = -1;
     }
 
     public enum FSeekOrigin : int
@@ -65,7 +65,7 @@ namespace IFInterfaces.Services
         IAsyncAction InitFileServiceAsync([ReadOnlyArray] IStorageFile[] _files);
         IAsyncAction AddFilesAsync([ReadOnlyArray] IStorageFile[] _files);
 
-        IAsyncOperation<int> PickFileForReadAsync(string fileName, [ReadOnlyArray] string[] filters, int defaultFilterIdx);
+        IAsyncOperation<int> PickFileForReadAsync([ReadOnlyArray] string[] filters, int defaultFilterIdx);
         IAsyncOperation<int> PickFileForWriteAsync(string fileName, [ReadOnlyArray] string[] filters, int defaultFilterIdx);
 
         IAsyncOperation<IRandomAccessStream> GetStreamAsync(int fileStream, bool readOnly);

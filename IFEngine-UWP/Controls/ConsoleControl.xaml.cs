@@ -27,7 +27,7 @@ namespace IFEngine_UWP.Controls
             recurs = (FrameworkElement parent) =>
             {
                 if (parent == null)
-                    return Windows.UI.Core.CoreWindow.GetForCurrentThread().Bounds.Width;
+                    return CoreWindow.GetForCurrentThread().Bounds.Width;
                 return parent.Width > 0 ? parent.Width : parent.ActualWidth <= 0 ? recurs(parent.Parent as FrameworkElement) : parent.ActualWidth;
             };
             return recurs(this.Parent as FrameworkElement);
@@ -39,7 +39,7 @@ namespace IFEngine_UWP.Controls
             recurs = (FrameworkElement parent) =>
             {
                 if (parent == null)
-                    return Windows.UI.Core.CoreWindow.GetForCurrentThread().Bounds.Height;
+                    return CoreWindow.GetForCurrentThread().Bounds.Height;
                 return parent.Height > 0 ? parent.Height : parent.ActualHeight <= 0 ? recurs(parent.Parent as FrameworkElement) : parent.ActualHeight;
             };
             return recurs(this.Parent as FrameworkElement);
@@ -189,66 +189,77 @@ namespace IFEngine_UWP.Controls
 
         public void Write(char ch)
         {
-            if (ch == '\n' || ch == '\r')
+            runOnUiThread(() =>
             {
-                // create new line
-                outp(new LineBreak());
-                return;
-            }
+                if (ch == '\n' || ch == '\r')
+                {
+                    // create new line
+                    outp(new LineBreak());
+                    return;
+                }
 
-            var newRun = createRun(new string(new[] { ch }));
-            if (newRun != null)
-                outp(newRun);
-            ScrollToBottom();
+                var newRun = createRun(new string(new[] { ch }));
+                if (newRun != null)
+                    outp(newRun);
+                ScrollToBottom();
+            });
         }
 
         public void Write(string text)
         {
-            if (text.Length <= 0)
-                return;
-            var lines = text.Split('\n');
-            for (var lidx = 0; lidx < lines.Length - 1; lidx++)
+            runOnUiThread(() =>
             {
-                var ln = lines[lidx];
-                WriteLine(ln);
-            }
-            var line = lines[lines.Length - 1];
-            if (text.EndsWith("\n"))
-                WriteLine(line);
-            else
-            {
-                var newRun = createRun(line);
-                if (newRun != null)
-                    outp(newRun);
-            }
-            ScrollToBottom();
+                if (text.Length <= 0)
+                    return;
+                var lines = text.Split('\n');
+                for (var lidx = 0; lidx < lines.Length - 1; lidx++)
+                {
+                    var ln = lines[lidx];
+                    WriteLine(ln);
+                }
+                var line = lines[lines.Length - 1];
+                if (text.EndsWith("\n"))
+                    WriteLine(line);
+                else
+                {
+                    var newRun = createRun(line);
+                    if (newRun != null)
+                        outp(newRun);
+                }
+                ScrollToBottom();
+            });
         }
         public void WriteLine(string text)
         {
-            if (text.Trim('\n').IndexOf("\n") > -1)
+            runOnUiThread(() =>
             {
-                var lines = text.Split('\n');
-                foreach (var line in lines)
+                if (text.Trim('\n').IndexOf("\n") > -1)
                 {
-                    WriteLine(text);
+                    var lines = text.Split('\n');
+                    foreach (var line in lines)
+                    {
+                        WriteLine(text);
+                    }
+                    return;
                 }
-                return;
-            }
-            if (text.Equals(" "))
-            {
-                var spcRun = createRun(" ");
-                if (spcRun != null)
-                    outp(spcRun);
-                outp(new LineBreak());
-                return;
-            }
-            if (BlockQuoteOn)
-                text = "     " + text;
-            var run = createRun(text);
-            if (run != null)
-                outp(run);
-            outp(new LineBreak());
-            ScrollToBottom();
+                if (text.Equals(" "))
+                {
+                    var spcRun = createRun(" ");
+                    if (spcRun != null)
+                        outp((Inline) spcRun);
+                    outp((Inline) new LineBreak());
+                    return;
+                }
+                if (BlockQuoteOn)
+                    text = "     " + text;
+                var run = createRun(text);
+                if (run != null)
+                    outp((Inline) run);
+
+                outp((Inline) new LineBreak());
+
+                ScrollToBottom();
+            });
         }
 
         public IAsyncOperation<string> GetInputAsync()
@@ -256,6 +267,7 @@ namespace IFEngine_UWP.Controls
             return GetInputAsyncTask().AsAsyncOperation();
         }
         #endregion
+        CoreDispatcher dispatcher;
 
         public ConsoleControl()
         {
@@ -284,13 +296,17 @@ namespace IFEngine_UWP.Controls
             rootLayout.RowDefinitions[0].MaxHeight = CoreWindow.GetForCurrentThread().Bounds.Height * .66;
 
             SizeChanged += ConsoleControl_SizeChanged;
+
+            dispatcher = CoreWindow.GetForCurrentThread().Dispatcher;
         }
 
         void ConsoleControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             //rootLayout.Height = e.NewSize.Height;
             ReCalcCells();
-            var temp = rootLayout.Width;
+            var temp = 0d;
+            temp = findHeight();
+
             rootLayout.Measure(new Size(rootLayout.DesiredSize.Width, temp));
             //var svHeight = e.NewSize.Height - (inputPanel.ActualHeight + txtPrompt.ActualHeight);
             //sv.Measure(new Size(sv.DesiredSize.Width, svHeight));
@@ -361,7 +377,31 @@ namespace IFEngine_UWP.Controls
         //    ((Paragraph)rtbConsole.Blocks[idx]).Inlines.Add(r);
         //    CauseScroll();
         //}
+        
+        private async Task runOnUiThread(Action action)
+        {
+            var complete = false;
+            if (dispatcher.HasThreadAccess)
+            {
+                try
+                {
+                    action();
+                    complete = true;
+                }
+                catch { }
+            }
+
+            if (!complete)
+            {
+                dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => action());
+            }
+        }
+
         private void outp(Inline r)
+        {
+            runOnUiThread(() => outp_ui(r));
+        }
+        private void outp_ui(Inline r)
         {
             var count = rtbConsole.Blocks.Count - blankLines; // ignore blank lines at end
             var idx = count - 1;
@@ -381,6 +421,9 @@ namespace IFEngine_UWP.Controls
 
         private Inline createRun(string text)
         {
+            if (String.IsNullOrEmpty(text))
+                return null;
+
             var ctl = getFormattedText(text);
             if (ctl is Inline)
                 return (Inline)ctl;

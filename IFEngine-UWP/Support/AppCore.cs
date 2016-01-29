@@ -9,6 +9,7 @@ using Windows.Storage.Pickers;
 using IFInterfaces.Support;
 using IFCore.Services;
 using System.Collections.Generic;
+using IFEngine.ZMachineF;
 
 namespace IFEngine_UWP.Support
 {
@@ -39,7 +40,8 @@ namespace IFEngine_UWP.Support
         {
             var engines = new[]
             {
-                (IIFGameEngine)new AScapeIFEngine()
+                (IIFGameEngine)new AScapeIFEngine(),
+                (IIFGameEngine)new ZMachine1To5And7PlusIFEngine()
             };
             IOC.AddGameEngines(engines);
         }
