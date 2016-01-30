@@ -154,10 +154,6 @@
       <Project>{539c63d4-3fa5-48b2-a86f-719dad3dd42a}</Project>
       <Name>IFEngine.Ascape</Name>
     </ProjectReference>
-    <ProjectReference Include="..\IFEngine.ZMachineF\IFEngine.ZMachineF.csproj">
-      <Project>{ad74d47f-d33f-4cab-a1a1-61ced5091468}</Project>
-      <Name>IFEngine.ZMachineF</Name>
-    </ProjectReference>
     <ProjectReference Include="..\IFInterfaces\IFInterfaces.csproj">
       <Project>{bcb1031b-3a70-4f01-b0ab-352131cbc576}</Project>
       <Name>IFInterfaces</Name>

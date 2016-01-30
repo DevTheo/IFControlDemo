@@ -58,6 +58,7 @@ namespace IFEngine.ZMachineF
         public IAsyncOperation<ExecutionResult> Start(IIFRuntime runtime, bool debugMessages)
         {
             this.runtime = runtime;
+            FastMem.main = this;
             return StartAsyncTask(debugMessages).AsAsyncOperation();
         }
         #endregion
@@ -380,7 +381,7 @@ namespace IFEngine.ZMachineF
         }
 
         ushort read16(long address)
-        {
+        {            
             return read16((int) address);
         }
         ushort read16(uint address)
@@ -389,7 +390,10 @@ namespace IFEngine.ZMachineF
         }
         ushort read16(int address)
         {
-            return (ushort) ((memory[address] << 8) | memory[address + 1]);
+            byte temp = 0;
+            FastMem.LOW_WORD(address, out temp);
+            return temp;
+            //return (ushort) ((memory[address] << 8) | memory[address + 1]);
         }
 
         void write16(int address, int value)
@@ -1798,8 +1802,6 @@ namespace IFEngine.ZMachineF
 
         async Task<ExecutionResult> game_begin()
         {
-            ZObject.main = this;
-
             await Task.Run(() =>
             {
                 int i;
@@ -1907,10 +1909,23 @@ namespace IFEngine.ZMachineF
                     if (execresult == ExecutionResult.ERR_NO_ERRORS)
                     {
                         restart_address = (uint)(read16(0x06) << address_shift);
-                        dictionary_table = (uint) (read16(0x08) << address_shift);
-                        object_table = (uint) (read16(0x0A) << address_shift);
-                        global_table = (uint) (read16(0x0C) << address_shift);
+                        //LOW_WORD(ZMachine.H_RELEASE, out main.h_release);
+                        //LOW_WORD(ZMachine.H_RESIDENT_SIZE, out main.h_resident_size);
+                        //LOW_WORD(ZMachine.H_START_PC, out main.h_start_pc);
+
+                        //dictionary_table = (uint) (read16(0x08) << address_shift);
+                        byte temp = 0;
+                        FastMem.LOW_WORD(8, out temp); dictionary_table = temp; temp = 0;
+
+                        //object_table = (uint) (read16(0x0A) << address_shift);
+                        FastMem.LOW_WORD(10, out temp); object_table = temp; temp = 0;
+                        //global_table = (uint) (read16(0x0C) << address_shift);
+                        FastMem.LOW_WORD(12, out temp); global_table = temp; temp = 0;
                         static_start = (uint) (read16(0x0E) << address_shift);
+                        FastMem.LOW_WORD(14, out temp); static_start = temp; temp = 0;
+
+                        //LOW_WORD(ZMachine.H_FLAGS, out main.h_flags);
+
                         memory[0x11] &= 0x53;
                         if (zmachineVersion > 1)
                         {

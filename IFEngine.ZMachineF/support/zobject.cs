@@ -28,7 +28,17 @@ namespace Frotz.Generic
 {
     internal static class ZObject
     {
-        internal static MainVM main;
+        internal static MainVM main
+        {
+            get
+            {
+                return FastMem.main;
+            }
+            set
+            {
+                FastMem.main = value;
+            }
+        }
 
         internal static zword MAX_OBJECT = 2000;
 

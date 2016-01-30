@@ -13,12 +13,16 @@ namespace Frotz.Generic
 
     internal static class FastMem
     {
-
+        static MainVM _main = null;
         internal static MainVM main
         {
             get
             {
-                return ZObject.main;
+                return _main;
+            }
+            set
+            {
+                _main = value;
             }
         }
 
