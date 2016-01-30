@@ -110,6 +110,8 @@
   <ItemGroup>
     <Compile Include="Helpers\Arrays.cs" />
     <Compile Include="Helpers\StringFunctions.cs" />
+    <Compile Include="support\fastmem.cs" />
+    <Compile Include="support\zobject.cs" />
     <Compile Include="ZMachine1To5And7PlusIFEngine.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

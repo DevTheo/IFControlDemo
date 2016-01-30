@@ -441,3 +441,6 @@ D:\source\_xaml\IFEngine\IFEngine-UWP\obj\x86\Debug\qualifiers.txt
 D:\source\_xaml\IFEngine\IFEngine-UWP\obj\x86\Debug\qualifiers.txt.intermediate
 D:\source\_xaml\IFEngine\IFEngine-UWP\obj\x86\Debug\MultipleQualifiersPerDimensionFound.txt
 D:\source\_xaml\IFEngine\IFEngine-UWP\obj\x86\Debug\ProjectArchitectures.txt
+D:\source\_xaml\IFEngine\IFEngine-UWP\bin\x86\Debug\IFEngine.ZMachineF.winmd
+D:\source\_xaml\IFEngine\IFEngine-UWP\bin\x86\Debug\IFEngine.ZMachineF.pdb
+D:\source\_xaml\IFEngine\IFEngine-UWP\bin\x86\Debug\IFEngine.ZMachineF.pri

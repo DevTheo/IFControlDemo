@@ -37,17 +37,19 @@
     <Extension Category="windows.activatableClass.inProcessServer">
       <InProcessServer>
         <Path>IFEngine-UWP.exe</Path>
+        <ActivatableClass ActivatableClassId="IFEngine.ZMachineF.ZMachine1To5And7PlusIFEngine" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="IFCore.CONSOLAS_FONT" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="IFCore.Services.EmptyImplementation" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="IFCore.Services.SimpleRuntimeInterface" ThreadingModel="both" />
         <ActivatableClass ActivatableClassId="IFCore.Services.IOC.IOCContainer" ThreadingModel="both" />
         <ActivatableClass ActivatableClassId="IFCore.Services.IOC.PossibleGameEngines" ThreadingModel="both" />
-        <ActivatableClass ActivatableClassId="IFCore.Services.SimpleRuntimeInterface" ThreadingModel="both" />
         <ActivatableClass ActivatableClassId="IFCore.Services.ArchiveAndLocalBasedFileService" ThreadingModel="both" />
-        <ActivatableClass ActivatableClassId="IFCore.Services.EmptyImplementation" ThreadingModel="both" />
-        <ActivatableClass ActivatableClassId="IFCore.CONSOLAS_FONT" ThreadingModel="both" />
         <ActivatableClass ActivatableClassId="IFEngine.Ascape.AScapeIFEngine" ThreadingModel="both" />
-        <ActivatableClass ActivatableClassId="IFInterfaces.Support.JoystickInputData" ThreadingModel="both" />
-        <ActivatableClass ActivatableClassId="IFInterfaces.Support.AnimationFrame" ThreadingModel="both" />
         <ActivatableClass ActivatableClassId="IFInterfaces.Support.TupleIntInt" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="IFInterfaces.Support.AnimationFrame" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="IFInterfaces.Support.JoystickInputData" ThreadingModel="both" />
         <ActivatableClass ActivatableClassId="IFInterfaces.Services.FPos_T" ThreadingModel="both" />
+        <ActivatableClass ActivatableClassId="IFInterfaces.Services.FileIOConstants" ThreadingModel="both" />
         <ActivatableClass ActivatableClassId="IFInterfaces.Services.FReadResult" ThreadingModel="both" />
       </InProcessServer>
     </Extension>
@@ -56,7 +58,7 @@
     <build:Item Name="TargetFrameworkMoniker" Value=".NETCore,Version=v5.0" />
     <build:Item Name="VisualStudio" Version="14.0" />
     <build:Item Name="VisualStudioEdition" Value="Microsoft Visual Studio Community 2015" />
-    <build:Item Name="OperatingSystem" Version="10.0.11099.1000 (rs1_release.160109-1156)" />
+    <build:Item Name="OperatingSystem" Version="10.0.11102.1000 (rs1_release.160113-1800)" />
     <build:Item Name="Microsoft.Build.AppxPackage.dll" Version="14.0.24720.0" />
     <build:Item Name="ProjectGUID" Value="{D77D3D53-388C-4308-AFDA-DB5713772F40}" />
     <build:Item Name="OptimizingToolset" Value="None" />

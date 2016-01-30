@@ -9,6 +9,7 @@ using IFInterfaces.Support;
 using Windows.Foundation;
 using System.IO;
 using IFInterfaces.Helpers;
+using Frotz.Generic;
 
 namespace IFEngine.ZMachineF
 {
@@ -229,46 +230,70 @@ namespace IFEngine.ZMachineF
         #endregion
 
         #region macros
-        Func<ushort, int, ushort> obj_tree_get = (o, f) => (ushort)0;
-        Func<ushort, ushort> parent = (o) => (ushort) 0; //obj_tree_get(o, 0);
-        Func<ushort, ushort> sibling = (o) => (ushort) 0; //obj_tree_get(o, 1);
-        Func<ushort, ushort> child = (o) => (ushort) 0; //obj_tree_get(o, 2);
-        Action<ushort, int, ushort> obj_tree_put = (obj, f, v) => { };
-        Action<ushort, ushort> set_parent = (o, v) => {};
-        Action<ushort, ushort> set_sibling = (o, v) => { };
-        Action<ushort, ushort> set_child = (o, v) => { };
-        Func<uint, uint> attribute = (o) =>  0;
-        Func<uint, int> obj_prop_addr = (o) => 0;
-        
-        /*void obj_tree_put(ushort obj, int f, ushort v)
+        ushort obj_tree_get (int o, ushort f)
         {
-            if (zmachineVersion > 3) write16(object_table + 118 + obj * 14 + f * 2, v);
-            else memory[object_table + 57 + obj * 9 + f] = v;
-        }*/
-
-        void setupMacros()
+            return (zmachineVersion > 3) ?
+                read16((int)object_table + 118 + (o) * 14 + (f) * 2) : 
+                (ushort)memory[object_table + 57 + (o) * 9 + (f)];
+        }
+        
+        void obj_tree_put (ushort obj, int f, ushort v)
         {
             if (zmachineVersion > 3)
-            {
-                obj_tree_get = (o, f) => read16((int)(object_table + 118 + ((uint)o) * 14 + (f) * 2));
-                obj_tree_put = (obj, f, v) => write16((int)(object_table + 118 + obj * 14 + f * 2), v);
-                attribute = (o) => object_table + 112 + (o) * 14;
-                obj_prop_addr = (o) => read16((int) (object_table + 60 + (o) * 9)) << address_shift;
-            }
+                write16((int)object_table + 118 + obj * 14 + f * 2, v);
             else
-            {
-                obj_tree_get = (o, f) => memory[(int)(object_table + 57 + ((uint)o) * 9 + (f))];
-                obj_tree_put = (obj, f, v) => memory[(int) (object_table + 57 + obj * 9 + f)] = (byte)v;
-                attribute = (o) => object_table + 53 + (o) * 9;
-                obj_prop_addr = (o) => read16((int) (object_table + 124 + (o) * 14)) << address_shift;
-            }
-            parent = (o) => obj_tree_get(o, 0);
-            sibling = (o) => obj_tree_get(o, 1);
-            child = (o) => obj_tree_get(o, 2);
-            set_parent = (o, v) => obj_tree_put(o, 0, v);
-            set_sibling = (o, v) => obj_tree_put(o, 1, v);
-            set_child = (o, v) => obj_tree_put(o, 2, v);
+                memory[object_table + 57 + obj * 9 + f] = (byte)v;
         }
+
+        ushort parent(ushort o)
+        {
+            return obj_tree_get(o, 0);
+        }
+
+        ushort sibling(ushort o)
+        {
+            return obj_tree_get(o, 1);
+        }
+
+        ushort child(ushort o)
+        {
+            return obj_tree_get(o, 2);
+        }
+        
+        void set_parent (ushort o, ushort v)
+        {
+            obj_tree_put(o, 0, v);
+        }
+
+        void set_sibling(ushort o, ushort v)
+        {
+            obj_tree_put(o, 1, v);
+        }
+
+        void set_child(ushort o, ushort v)
+        {
+            obj_tree_put(o, 2, v);
+        }
+
+        uint attribute (uint x)
+        {
+            return (zmachineVersion > 3) ?
+                object_table + 112 + (x) * 14 :
+                object_table + 53 + (x) * 9;
+        }
+
+        int obj_prop_addr(uint o)
+        {
+            return obj_prop_addr((int) o);
+        }
+
+        int obj_prop_addr(int objNum)
+        {
+            return read16(zmachineVersion <= 3 ?
+                            (object_table + ((objNum - 1) * 9 + 60)) :
+                            (object_table + ((objNum - 1) * 14 + 124))) << address_shift;
+        }
+
         #endregion
 
         #region Instructions
@@ -354,6 +379,14 @@ namespace IFEngine.ZMachineF
             get_random(4);
         }
 
+        ushort read16(long address)
+        {
+            return read16((int) address);
+        }
+        ushort read16(uint address)
+        {
+            return read16((int) address);
+        }
         ushort read16(int address)
         {
             return (ushort) ((memory[address] << 8) | memory[address + 1]);
@@ -1765,6 +1798,8 @@ namespace IFEngine.ZMachineF
 
         async Task<ExecutionResult> game_begin()
         {
+            ZObject.main = this;
+
             await Task.Run(() =>
             {
                 int i;
@@ -1814,7 +1849,6 @@ namespace IFEngine.ZMachineF
                     fileIO.FRead(memory, 64, 1, story);
                     memoryIndex = 0;
                     zmachineVersion = memory[memoryIndex];
-                    setupMacros();
 
                     switch (zmachineVersion)
                     {
@@ -2307,7 +2341,8 @@ namespace IFEngine.ZMachineF
 		            insert_object(inst_args[inst_args_index], 0);
                     break;
 		        case 0x8A: // Print short name of object
-		            text_print(obj_prop_addr((uint)(inst_args[inst_args_index] + 1)));
+                           //text_print(obj_prop_addr((uint)(inst_args[inst_args_index] + 1)));
+                    text_print(Frotz.Generic.ZObject.object_name((ushort)(inst_args[inst_args_index] + 1)));
                     break;
 		        case 0x8B: // Return
 		            exit_routine(inst_args[inst_args_index]);

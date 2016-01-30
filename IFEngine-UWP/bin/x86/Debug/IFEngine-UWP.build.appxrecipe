@@ -348,6 +348,9 @@
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFEngine.Ascape\bin\Debug\IFEngine.Ascape.winmd">
       <PackagePath>IFEngine.Ascape.winmd</PackagePath>
     </AppxPackagedFile>
+    <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFEngine.ZMachineF\bin\Debug\IFEngine.ZMachineF.winmd">
+      <PackagePath>IFEngine.ZMachineF.winmd</PackagePath>
+    </AppxPackagedFile>
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFInterfaces\bin\Debug\IFInterfaces.winmd">
       <PackagePath>IFInterfaces.winmd</PackagePath>
     </AppxPackagedFile>

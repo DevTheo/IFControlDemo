@@ -10,7 +10,7 @@
     <PackageArchitecture>x86</PackageArchitecture>
     <PackageIdentityName>dcba9ddc-d208-4378-b16f-7296618c1f13</PackageIdentityName>
     <IntermediateOutputPath>D:\source\_xaml\IFEngine\IFEngine-UWP\obj\x86\Debug\</IntermediateOutputPath>
-    <RegisteredManifestChecksum>574D0C909E2B378603C78391115B86229F2E3D43CAC838AF3555664FC541E428</RegisteredManifestChecksum>
+    <RegisteredManifestChecksum>9D13DDBB68DD60A1E2CCBA7A00A560BC6312057E105EAECAA1FB2A4052BA47FC</RegisteredManifestChecksum>
     <RegisteredPackageMoniker>dcba9ddc-d208-4378-b16f-7296618c1f13_1.0.0.0_x86__mxmjbjshrz3mm</RegisteredPackageMoniker>
     <RegisteredUserModeAppID>dcba9ddc-d208-4378-b16f-7296618c1f13_mxmjbjshrz3mm!App</RegisteredUserModeAppID>
     <RegisteredPackageID>dcba9ddc-d208-4378-b16f-7296618c1f13</RegisteredPackageID>
@@ -22,13 +22,13 @@
     <AppXManifest Include="D:\source\_xaml\IFEngine\IFEngine-UWP\bin\x86\Debug\Core\AppxManifest.xml">
       <PackagePath>AppxManifest.xml</PackagePath>
       <ReRegisterAppIfChanged>true</ReRegisterAppIfChanged>
-      <Modified>2016-01-25T20:52:28.589</Modified>
+      <Modified>2016-01-30T02:32:07.362</Modified>
     </AppXManifest>
   </ItemGroup>
   <ItemGroup>
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFEngine-UWP\bin\x86\Debug\IFEngine-UWP.exe">
       <PackagePath>entrypoint\IFEngine-UWP.exe</PackagePath>
-      <Modified>2016-01-25T20:52:27.825</Modified>
+      <Modified>2016-01-30T02:31:49.299</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="C:\Users\Jay\.nuget\packages\Microsoft.ApplicationInsights\1.0.0\lib\portable-win81+wpa81\Microsoft.ApplicationInsights.dll">
       <PackagePath>Microsoft.ApplicationInsights.dll</PackagePath>
@@ -460,15 +460,19 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFControl\bin\Debug\IFCore.winmd">
       <PackagePath>IFCore.winmd</PackagePath>
-      <Modified>2016-01-25T20:23:59.592</Modified>
+      <Modified>2016-01-29T16:38:52.592</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFEngine.Ascape\bin\Debug\IFEngine.Ascape.winmd">
       <PackagePath>IFEngine.Ascape.winmd</PackagePath>
-      <Modified>2016-01-25T20:18:24.999</Modified>
+      <Modified>2016-01-29T16:38:52.619</Modified>
+    </AppxPackagedFile>
+    <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFEngine.ZMachineF\bin\Debug\IFEngine.ZMachineF.winmd">
+      <PackagePath>IFEngine.ZMachineF.winmd</PackagePath>
+      <Modified>2016-01-30T02:31:46.569</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFInterfaces\bin\Debug\IFInterfaces.winmd">
       <PackagePath>IFInterfaces.winmd</PackagePath>
-      <Modified>2016-01-25T20:18:20.891</Modified>
+      <Modified>2016-01-29T16:36:46.188</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFEngine-UWP\ApplicationInsights.config">
       <PackagePath>ApplicationInsights.config</PackagePath>
@@ -522,11 +526,11 @@
     </AppxPackagedFile>
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFEngine-UWP\bin\x86\Debug\resources.pri">
       <PackagePath>resources.pri</PackagePath>
-      <Modified>2016-01-25T20:49:13.235</Modified>
+      <Modified>2016-01-30T02:28:36.534</Modified>
     </AppxPackagedFile>
     <AppxPackagedFile Include="D:\source\_xaml\IFEngine\IFEngine-UWP\bin\x86\Debug\Core\IFEngine-UWP.exe">
       <PackagePath>IFEngine-UWP.exe</PackagePath>
-      <Modified>2016-01-25T20:52:28.588</Modified>
+      <Modified>2016-01-30T02:32:07.361</Modified>
     </AppxPackagedFile>
   </ItemGroup>
   <ItemGroup>
