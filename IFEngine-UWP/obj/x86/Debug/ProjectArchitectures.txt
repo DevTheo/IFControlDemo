@@ -1,8 +1,0 @@
-D:\source\_xaml\IFEngine\IFControl\IFCore.csproj;neutral
-D:\source\_xaml\IFEngine\IFEngine.Ascape\IFEngine.Ascape.csproj;neutral
-D:\source\_xaml\IFEngine\IFEngine.ZMachineF\IFEngine.ZMachineF.csproj;neutral
-D:\source\_xaml\IFEngine\IFEngine-UWP\IFEngine-UWP.csproj;x86
-D:\source\_xaml\IFEngine\IFInterfaces\IFInterfaces.csproj;neutral
-D:\source\_xaml\IFEngine\IFInterfaces\IFInterfaces.csproj;neutral
-D:\source\_xaml\IFEngine\IFInterfaces\IFInterfaces.csproj;neutral
-D:\source\_xaml\IFEngine\IFInterfaces\IFInterfaces.csproj;neutral
